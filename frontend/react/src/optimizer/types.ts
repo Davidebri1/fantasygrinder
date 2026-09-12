@@ -54,6 +54,8 @@ export interface Player {
   isLiked?: boolean;
   injuryStatus?: string | null;
   stddev?: number | null;
+  /** Direct headshot URL — when set, no lookup is needed. */
+  photoUrl?: string | null;
 }
 
 export interface OptimizerSettings {
@@ -66,6 +68,12 @@ export interface OptimizerSettings {
   simulationCount: number;
   contestType?: ContestType;
   seed?: number;
+  /**
+   * When true (default), generate N *distinct* lineups — the N best
+   * different player combinations, for multi-entry portfolio construction.
+   * When false, solve once and return the single optimal lineup N times.
+   */
+  uniqueLineups?: boolean;
   // Sport-specific knobs
   teammateCorrelation?: number;
   opponentCorrelation?: number;

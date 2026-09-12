@@ -68,6 +68,7 @@ export function NbaHomeScreen() {
           minProjection: settings.min_projection,
           simulationCount: settings.simulation_count,
           contestType: settings.contest_type,
+          uniqueLineups: settings.unique_lineups,
           teammateCorrelation: settings.teammate_correlation,
           opponentCorrelation: settings.opponent_correlation,
           seed: 42,
@@ -90,6 +91,7 @@ export function NbaHomeScreen() {
           isExcluded: p.is_excluded,
           isLiked: p.is_liked,
           injuryStatus: p.injury_status,
+          photoUrl: p.photo_url,
         })),
       );
       setLastResult(

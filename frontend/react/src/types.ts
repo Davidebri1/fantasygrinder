@@ -110,6 +110,8 @@ export interface Player {
   is_liked?: boolean;
   injury_status?: string | null;
   injury_severity?: string | null;
+  /** Direct headshot URL — travels with the player everywhere. */
+  photo_url?: string | null;
 }
 
 export interface Slate {
@@ -135,6 +137,8 @@ export interface NbaSettings {
   max_exposure: number;
   max_attempts: number;
   enable_bring_back: boolean;
+  /** true = N distinct lineups; false = repeat the single optimal lineup. */
+  unique_lineups: boolean;
   bring_back_count: number;
   global_min_players_per_team: number;
   global_max_players_per_team: number;
@@ -215,6 +219,7 @@ export const DEFAULT_NBA_SETTINGS: NbaSettings = {
   max_exposure: 100,
   max_attempts: 5_000,
   enable_bring_back: false,
+  unique_lineups: true,
   bring_back_count: 1,
   global_min_players_per_team: 0,
   global_max_players_per_team: 0,

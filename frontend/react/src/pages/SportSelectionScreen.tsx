@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Card } from "@/components/Card";
-import { BASKETBALL_ICON, GOLF_ICON, MMA_ICON } from "@/components/icons";
+import { GolfLogo, NbaLogo, UfcLogo } from "@/components/sport-logos";
 
 export function SportSelectionScreen() {
   return (
@@ -16,20 +16,20 @@ export function SportSelectionScreen() {
           title="NBA Optimizer"
           description="Classic + Showdown. Bipartite position assignment, team stacking, bring-back rules."
           to="/nba"
-          icon={BASKETBALL_ICON}
+          icon={<NbaLogo size={48} />}
           badge="Most popular"
         />
         <SportCard
           title="MMA Optimizer"
           description="6-fighter rosters, opponent correlation modeling, allow/disallow both fighters in same bout."
           to="/mma"
-          icon={MMA_ICON}
+          icon={<UfcLogo size={48} />}
         />
         <SportCard
           title="Golf Optimizer"
           description="6-golfer rosters, optional card correlation, salary-cap tuning."
           to="/golf"
-          icon={GOLF_ICON}
+          icon={<GolfLogo size={48} />}
         />
       </div>
 

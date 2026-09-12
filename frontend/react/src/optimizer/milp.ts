@@ -229,6 +229,25 @@ function pickBranchVariable(problem: MilpProblem, fixed: number[]): number {
   return -1;
 }
 
+/**
+ * True when `fixed` has already selected every member of a forbidden
+ * lineup — the branch can never become valid, so prune it.
+ */
+function violatesForbidden(problem: MilpProblem, fixed: number[]): boolean {
+  for (const set of problem.forbiddenSets) {
+    if (set.size === 0) continue;
+    let allChosen = true;
+    for (const i of set) {
+      if (fixed[i] !== 1) {
+        allChosen = false;
+        break;
+      }
+    }
+    if (allChosen) return true;
+  }
+  return false;
+}
+
 function search(problem: MilpProblem, state: SearchState): void {
   if (performance.now() - state.startTime > state.timeLimitMs) return;
   if (state.nodes > state.maxNodes) return;
@@ -239,6 +258,9 @@ function search(problem: MilpProblem, state: SearchState): void {
   let picked = 0;
   for (let i = 0; i < n; i++) if (state.fixed[i] === 1) picked += 1;
   if (picked > problem.rosterSize) return;
+
+  // Prune branches that have already completed a forbidden lineup.
+  if (violatesForbidden(problem, state.fixed)) return;
 
   // LP upper bound for pruning.
   const ub = lpUpperBound(problem, state.fixed);
@@ -307,10 +329,15 @@ export function solveMilp(spec: MilpSpec): MilpResult {
   const seedValue = scoreSolution(problem, lb);
   const seedSolution = lb;
 
+  // A forbidden lineup must never seed the incumbent — otherwise bound
+  // pruning would "return" it and the caller would drop it as a duplicate.
+  const seedForbidden = violatesForbidden(problem, seedSolution);
+  const haveSeed = !seedForbidden && seedSolution.reduce((a, b) => a + b, 0) === problem.rosterSize;
+
   const state: SearchState = {
     fixed,
-    bestValue: seedValue,
-    bestSolution: seedSolution,
+    bestValue: haveSeed ? seedValue : -Infinity,
+    bestSolution: haveSeed ? seedSolution : new Array(n).fill(0),
     nodes: 0,
     startTime,
     timeLimitMs: spec.timeLimitMs ?? 5_000,
@@ -328,8 +355,11 @@ export function solveMilp(spec: MilpSpec): MilpResult {
   const value = scoreSolution(problem, state.bestSolution);
   const salary = salaryOf(problem, state.bestSolution);
 
-  // Infeasibility check: did we end up with fewer than rosterSize picks?
-  if (selectedIdx.length < problem.rosterSize) {
+  // Infeasibility: too few picks, or the only solution found was forbidden.
+  if (
+    selectedIdx.length < problem.rosterSize ||
+    violatesForbidden(problem, state.bestSolution)
+  ) {
     return {
       selectedIdx: [],
       value: 0,

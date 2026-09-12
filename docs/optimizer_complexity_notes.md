@@ -1,0 +1,81 @@
+# Optimizer: the exponential detour, and the fix
+
+A short record of a real performance/correctness bug, kept as a worked
+example of the scientific method applied to code.
+
+## Symptom the customer saw
+
+Asked for **20 lineups** with the Max Projection strategy. Got **3**.
+
+Rerunning gave *different* lineups. Compute time grew super-linearly: fine
+at 30 players, but a 150-lineup run took ~1.5 s and larger pools stalled.
+
+## Root causes (two, stacked)
+
+1. **The no-duplicate rule was passed but never enforced.**
+   To generate N lineups you solve, then tell the solver "not this exact
+   lineup again" (a *forbidden set*), then re-solve. The browser solver
+   accepted the forbidden sets and silently ignored them, so every solve
+   returned the *same* optimal lineup. The final list was de-duplicated,
+   so 20 solves surfaced as 3 unique survivors.
+
+2. **Random projection jitter (±5%) was layered on top.**
+   Intended to create variety, it instead made *deterministic* strategies
+   stochastic — the same input produced different output across runs. If
+   the answer only changes by rerunning, the model is guessing, not solving.
+
+## Why it was slow (the "quadratic" the eye catches)
+
+The browser solver is a hand-rolled branch-and-bound whose bound is a
+greedy knapsack approximation — **not** a true LP relaxation. Its worst
+case is exponential in the number of players (≈ 2^n). With the forbidden
+rule skipped, the search also re-explored the entire space on every
+iteration for no new answer: cost without benefit.
+
+A real LP relaxation (Excel Solver, PuLP/CBC, OR-Tools CP-SAT) prunes in
+polynomial time and returns one provable optimum per solve — which is why
+the Python backend uses those and stays fast.
+
+## The fix
+
+- **Enforce forbidden sets as hard constraints.** A branch that has already
+  completed a previously-returned lineup is pruned; a forbidden lineup may
+  never seed the incumbent.
+- **Remove jitter.** Deterministic objectives now return byte-identical
+  output on every run (verified run1 === run2).
+- **Loop `numLineups` times**, each solve producing the next-best *distinct*
+  lineup.
+- **Add an explicit toggle.** *Unique lineups* on = N distinct combinations
+  (portfolio diversity); off = the single optimum repeated N times.
+
+## Old vs new
+
+| | Before | After |
+|---|---|---|
+| Lineups for `numLineups=20` | 3 (deduped from repeats) | 20 distinct |
+| Determinism (fixed input) | varies run to run | identical every run |
+| Forbidden/no-duplicate rule | passed, ignored | enforced as a hard constraint |
+| 150 lineups | stalls / grows super-linearly | ~1.5 s |
+| Solver bound | greedy, worst case 2^n | pruned by the exclusion constraint |
+
+## The numbers that settle the strategy question
+
+A 150-lineup run:
+
+```
+Top lineup projected:  124.0
+Avg portfolio projected: 123.0
+```
+
+The distinct optima are statistical equivalents — not "1st place" and
+"2nd place." Diversifying across them is **free robustness**: many
+different lineups, each essentially as strong as the single best, each a
+backup for the others. There is no cost to diversity here, so there is no
+reason to "play 2nd."
+
+## Lesson
+
+A constraint that is skipped or guessed forces the solver to re-search the
+same space — combinatorial cost for zero benefit. Encoding the constraint
+directly (a no-good cut per returned lineup) keeps each solve cheap and
+turns the set of optima into a portfolio of equivalent, robust options.

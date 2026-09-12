@@ -172,6 +172,23 @@ export function OptimizerSettingsCard({ settings, onChange, onRun, running }: Pr
           </Field>
         </div>
 
+        <label className="flex items-start gap-2 text-sm border border-slate-200 rounded-md px-3 py-2">
+          <input
+            type="checkbox"
+            checked={settings.unique_lineups}
+            onChange={(e) => onChange({ unique_lineups: e.target.checked })}
+            className="mt-0.5 rounded border-slate-300 text-brand focus:ring-brand"
+          />
+          <span className="min-w-0">
+            <span className="block font-medium text-ink">Unique lineups</span>
+            <span className="block text-[11px] text-ink-subtle leading-snug">
+              On: N distinct lineups (the N best different combinations) for
+              multi-entry tournaments. Off: the single optimal lineup repeated
+              N times.
+            </span>
+          </span>
+        </label>
+
         <details className="border border-slate-200 rounded-md">
           <summary className="px-3 py-2 cursor-pointer text-sm font-medium text-ink select-none">
             Advanced

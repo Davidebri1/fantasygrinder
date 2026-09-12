@@ -67,51 +67,37 @@ export function buildStrategyPlan(
     }
     return out;
   }
+  // Deterministic objectives: the score model is fixed, so the answer is a
+  // fact. To produce N lineups we return the same objective N times and let
+  // the caller forbid each found lineup before re-solving — that yields the
+  // N best *distinct* lineups, in order, with no randomness. Re-running gives
+  // an identical result.
   if (strategy === "maxProjection") {
     const base = scoreMaxProjection(players);
-    const count = Math.max(1, Math.ceil(settings.numLineups / 2));
-    const out: StrategyResult[] = [
-      { scores: base, iteration: 0, description: "max_projection" },
-    ];
-    const baseSeed = settings.seed ?? 0;
-    for (let i = 1; i < count; i++) {
-      out.push({
-        scores: perturb(base, 0.05, hashSeed(baseSeed, i)),
-        iteration: i,
-        description: "max_projection_perturbed",
-      });
-    }
-    return out;
+    const count = Math.max(1, settings.numLineups);
+    return Array.from({ length: count }, (_, i) => ({
+      scores: base,
+      iteration: i,
+      description: "max_projection",
+    }));
   }
   if (strategy === "balanced") {
     const base = scoreBalanced(players);
-    const count = Math.max(1, Math.ceil(settings.numLineups / 2));
-    const out: StrategyResult[] = [{ scores: base, iteration: 0, description: "balanced" }];
-    const baseSeed = settings.seed ?? 0;
-    for (let i = 1; i < count; i++) {
-      out.push({
-        scores: perturb(base, 0.08, hashSeed(baseSeed, i)),
-        iteration: i,
-        description: "balanced_perturbed",
-      });
-    }
-    return out;
+    const count = Math.max(1, settings.numLineups);
+    return Array.from({ length: count }, (_, i) => ({
+      scores: base,
+      iteration: i,
+      description: "balanced",
+    }));
   }
   if (strategy === "salaryCap") {
     const base = scoreSalaryCap(players);
-    const count = Math.max(1, Math.ceil(settings.numLineups / 2));
-    const out: StrategyResult[] = [
-      { scores: base, iteration: 0, description: "salary_cap" },
-    ];
-    const baseSeed = settings.seed ?? 0;
-    for (let i = 1; i < count; i++) {
-      out.push({
-        scores: perturb(base, 0.08, hashSeed(baseSeed, i)),
-        iteration: i,
-        description: "salary_cap_perturbed",
-      });
-    }
-    return out;
+    const count = Math.max(1, settings.numLineups);
+    return Array.from({ length: count }, (_, i) => ({
+      scores: base,
+      iteration: i,
+      description: "salary_cap",
+    }));
   }
   return [];
 }

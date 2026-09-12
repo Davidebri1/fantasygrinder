@@ -98,6 +98,7 @@ export function runOptimize(
   const plan = buildStrategyPlan(settings.strategy, eligible, settings, simulatedRows);
   const collected: Lineup[] = [];
   const forbidden: Set<number>[] = [];
+  const wantUnique = settings.uniqueLineups !== false;
 
   for (const strat of plan) {
     const spec = buildSpecForSport(eligible, strat.scores, settings, forbidden);
@@ -120,7 +121,29 @@ export function runOptimize(
     collected.push(lineup);
     forbidden.push(new Set(result.selectedIdx));
 
+    // Non-unique mode: we only need the single optimal lineup, cloned below.
+    if (!wantUnique) break;
     if (collected.length >= settings.numLineups) break;
+  }
+
+  // Non-unique mode: return the proven optimum repeated N times (the same
+  // lineup for N contest entries), rather than N distinct combinations.
+  if (!wantUnique && collected.length > 0) {
+    const best = collected[0];
+    const clones: Lineup[] = Array.from({ length: settings.numLineups }, (_, i) => ({
+      ...best,
+      assignments: best.assignments.map((a) => ({ ...a })),
+      rank: i + 1,
+    }));
+    return {
+      lineups: clones,
+      strategy: settings.strategy,
+      solverBackend: "browser",
+      elapsedMs: Math.round(performance.now() - started),
+      warnings: [
+        "Unique lineups off — the single optimal lineup was repeated. Turn it on for multi-entry portfolio diversity.",
+      ],
+    };
   }
 
   // 4. Sort + rank

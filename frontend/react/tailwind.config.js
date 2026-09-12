@@ -26,8 +26,16 @@ export default {
         },
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "-apple-system", "Segoe UI", "Roboto", "sans-serif"],
-        mono: ["JetBrains Mono", "Menlo", "Monaco", "monospace"],
+        sans: [
+          "Barlow",
+          "system-ui",
+          "-apple-system",
+          "Segoe UI",
+          "Roboto",
+          "sans-serif",
+        ],
+        condensed: ["Barlow Condensed", "Barlow", "system-ui", "sans-serif"],
+        mono: ["IBM Plex Mono", "Menlo", "Monaco", "monospace"],
       },
       boxShadow: {
         soft: "0 2px 4px rgba(0, 0, 0, 0.06)",

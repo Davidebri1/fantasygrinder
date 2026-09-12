@@ -49,6 +49,7 @@ export function GolfHomeScreen() {
           isLocked: p.is_locked,
           isExcluded: p.is_excluded,
           isLiked: p.is_liked,
+          photoUrl: p.photo_url,
         })),
       );
       setLastResult(

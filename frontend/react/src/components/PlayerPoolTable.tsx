@@ -40,6 +40,7 @@ export function PlayerPoolTable({ sport, players }: Props) {
               playerId={row.original.id}
               name={row.original.name}
               sport={sport}
+              photoUrl={row.original.photo_url}
               size={32}
             />
             <span className="font-medium truncate">{row.original.name}</span>

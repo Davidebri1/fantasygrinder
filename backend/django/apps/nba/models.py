@@ -130,6 +130,9 @@ class NbaPlayer(models.Model):
     injury_short_comment = models.TextField(blank=True, default="")
     injury_long_comment = models.TextField(blank=True, default="")
 
+    # ESPN headshot URL — travels with the player everywhere.
+    photo_url = models.URLField(max_length=512, blank=True, default="")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

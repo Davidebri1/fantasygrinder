@@ -15,7 +15,35 @@ import {
   DEFAULT_NBA_SETTINGS,
   type Player,
 } from "@/types";
-import { buildGolfSample, buildMmaSample, buildNbaSample } from "@/optimizer/sample";
+import { buildGolfSample, buildMmaSample, buildNbaSample, sampleHeadshotCache } from "@/optimizer/sample";
+import { seedHeadshotCache, prefetchHeadshots } from "@/components/PlayerAvatar";
+import type { Player as EnginePlayer } from "@/optimizer";
+
+/** Engine-shape player → wire-shape player (snake_case) with photo kept. */
+function toWire(p: EnginePlayer): Player {
+  return {
+    id: p.id,
+    name: p.name,
+    sport: p.sport,
+    salary: p.salary,
+    projection: p.projection,
+    user_projection: p.userProjection ?? null,
+    team: p.team,
+    opponent: p.opponent,
+    game_info: p.gameInfo,
+    positions: p.positions,
+    roster_positions: p.rosterPositions,
+    correlation_group: p.correlationGroup,
+    opponent_id: p.opponentId,
+    bout: p.bout,
+    projected_ownership: p.projectedOwnership,
+    is_locked: p.isLocked,
+    is_excluded: p.isExcluded,
+    is_liked: p.isLiked,
+    injury_status: p.injuryStatus ?? null,
+    photo_url: p.photoUrl ?? null,
+  };
+}
 
 interface AppState {
   // Working set
@@ -24,6 +52,8 @@ interface AppState {
   updatePlayer: (sport: string, playerId: string, patch: Partial<Player>) => void;
   bulkResetPlayers: (sport: string) => void;
   loadSample: (sport: "nba" | "mma" | "golf") => void;
+  /** Resolve ESPN headshots for the current roster in the background. */
+  prefetchRosterPhotos: (sport: string) => void;
 
   // Settings per sport
   nbaSettings: NbaSettings;
@@ -40,7 +70,7 @@ interface AppState {
 
 export const useAppStore = create<AppState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       players: { nba: [], mma: [], golf: [] },
       setPlayers: (sport, players) =>
         set((s) => ({ players: { ...s.players, [sport]: players } })),
@@ -57,10 +87,26 @@ export const useAppStore = create<AppState>()(
         set((s) => ({ players: { ...s.players, [sport]: [] } })),
 
       loadSample: (sport) => {
-        if (sport === "nba") set((s) => ({ players: { ...s.players, nba: buildNbaSample() } }));
-        else if (sport === "mma")
-          set((s) => ({ players: { ...s.players, mma: buildMmaSample() } }));
-        else set((s) => ({ players: { ...s.players, golf: buildGolfSample() } }));
+        seedHeadshotCache(sampleHeadshotCache());
+        if (sport === "nba") {
+          const roster = buildNbaSample().map(toWire);
+          set((s) => ({ players: { ...s.players, nba: roster } }));
+          void prefetchHeadshots(roster.map((p) => p.name));
+        } else if (sport === "mma") {
+          const roster = buildMmaSample().map(toWire);
+          set((s) => ({ players: { ...s.players, mma: roster } }));
+          void prefetchHeadshots(roster.map((p) => p.name));
+        } else {
+          const roster = buildGolfSample().map(toWire);
+          set((s) => ({ players: { ...s.players, golf: roster } }));
+          void prefetchHeadshots(roster.map((p) => p.name));
+        }
+      },
+
+      /** Enrich any roster (e.g. imported CSV) with ESPN headshots. */
+      prefetchRosterPhotos: (sport) => {
+        const roster = get().players[sport] ?? [];
+        void prefetchHeadshots(roster.map((p) => p.name));
       },
 
       nbaSettings: DEFAULT_NBA_SETTINGS,
@@ -78,12 +124,26 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "fantasy-grinder-app",
-      version: 1,
+      version: 2,
       partialize: (s) => ({
         players: s.players,
         nbaSettings: s.nbaSettings,
         activeSlateIdBySport: s.activeSlateIdBySport,
       }),
+      // v1 → v2: player records now carry headshots; drop persisted v1
+      // rosters so every visitor regenerates them from the new sample.
+      migrate: (persisted: unknown, version: number) => {
+        if (version < 2) {
+          return {
+            players: { nba: [], mma: [], golf: [] },
+            nbaSettings: {
+              ...DEFAULT_NBA_SETTINGS,
+            },
+            activeSlateIdBySport: {},
+          } as never;
+        }
+        return persisted as never;
+      },
     },
   ),
 );

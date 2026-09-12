@@ -32,6 +32,8 @@ class GolfPlayer(models.Model):
     is_excluded = models.BooleanField(default=False)
     is_liked = models.BooleanField(default=False)
 
+    photo_url = models.URLField(max_length=512, blank="", default="")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
