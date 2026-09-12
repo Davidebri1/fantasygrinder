@@ -139,6 +139,8 @@ export interface NbaSettings {
   enable_bring_back: boolean;
   /** true = N distinct lineups; false = repeat the single optimal lineup. */
   unique_lineups: boolean;
+  /** Solver view: integer search, or the LP-relaxation ("simplex") bound. */
+  solver: "branchBound" | "simplex";
   bring_back_count: number;
   global_min_players_per_team: number;
   global_max_players_per_team: number;
@@ -220,6 +222,7 @@ export const DEFAULT_NBA_SETTINGS: NbaSettings = {
   max_attempts: 5_000,
   enable_bring_back: false,
   unique_lineups: true,
+  solver: "branchBound",
   bring_back_count: 1,
   global_min_players_per_team: 0,
   global_max_players_per_team: 0,

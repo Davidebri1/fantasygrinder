@@ -74,6 +74,12 @@ export interface OptimizerSettings {
    * When false, solve once and return the single optimal lineup N times.
    */
   uniqueLineups?: boolean;
+  /**
+   * Solver view. "branchBound" (default) is the integer search.
+   * "simplex" computes the LP-relaxation bound explicitly and reports it.
+   * Both return the same integer lineups for the same inputs.
+   */
+  solver?: "branchBound" | "simplex";
   // Sport-specific knobs
   teammateCorrelation?: number;
   opponentCorrelation?: number;
@@ -126,4 +132,8 @@ export interface OptimizeTelemetry {
   infeasibleSolves: number;
   /** requested − uniqueFound (0 when fully satisfied). */
   shortBy: number;
+  /** Which solver view produced this run. */
+  solver?: "branchBound" | "simplex";
+  /** LP-relaxation upper bound on any feasible lineup (the "simplex" value). */
+  lpBound?: number;
 }

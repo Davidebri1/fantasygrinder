@@ -26,6 +26,7 @@ import {
   runSimulations,
 } from "./simulate";
 import { buildStrategyPlan } from "./strategies";
+import { lpRelaxation } from "./lp";
 import type {
   Lineup,
   OptimizeResult,
@@ -179,6 +180,26 @@ export function runOptimize(
     );
   }
 
+  // LP relaxation bound — the "simplex" view. Deterministic and identical
+  // for both solver modes; reported so the bound is visible.
+  const lockedIdx = new Set<number>();
+  const excludedIdx = new Set<number>();
+  for (let i = 0; i < eligible.length; i++) {
+    if (eligible[i].isLocked) lockedIdx.add(i);
+    if (eligible[i].isExcluded) excludedIdx.add(i);
+  }
+  const rosterSizeForLp = SPORT_ROSTER[settings.sport](settings);
+  const baseScores = plan[0]?.scores ?? eligible.map((p) => p.projection);
+  const lp = lpRelaxation(
+    eligible,
+    baseScores,
+    rosterSizeForLp,
+    settings.salaryCap,
+    lockedIdx,
+    excludedIdx,
+  );
+  const solverName = settings.solver === "simplex" ? "simplex" : "branchBound";
+
   return {
     lineups: top,
     strategy: settings.strategy,
@@ -192,6 +213,8 @@ export function runOptimize(
       duplicatesDropped,
       infeasibleSolves,
       shortBy,
+      solver: solverName,
+      lpBound: Math.round(lp.bound * 100) / 100,
     },
   };
 }

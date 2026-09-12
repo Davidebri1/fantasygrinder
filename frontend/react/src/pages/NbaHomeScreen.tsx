@@ -78,6 +78,7 @@ export function NbaHomeScreen() {
           simulationCount: settings.simulation_count,
           contestType: settings.contest_type,
           uniqueLineups: settings.unique_lineups,
+          solver: settings.solver,
           teammateCorrelation: settings.teammate_correlation,
           opponentCorrelation: settings.opponent_correlation,
           seed: 42,

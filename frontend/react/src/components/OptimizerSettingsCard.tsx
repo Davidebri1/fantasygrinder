@@ -189,6 +189,30 @@ export function OptimizerSettingsCard({ settings, onChange, onRun, running }: Pr
           </span>
         </label>
 
+        <Field label="Solver">
+          <div className="grid grid-cols-2 gap-2">
+            {([
+              ["branchBound", "Branch & Bound", "Integer search — returns the lineups."],
+              ["simplex", "Simplex (LP relaxation)", "Shows the LP bound. Same lineups."],
+            ] as const).map(([val, title, desc]) => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => onChange({ solver: val })}
+                className={
+                  "text-left border rounded-md px-3 py-2 transition-colors " +
+                  (settings.solver === val
+                    ? "border-brand bg-brand/5"
+                    : "border-slate-200 hover:border-slate-300")
+                }
+              >
+                <span className="block text-sm font-medium text-ink">{title}</span>
+                <span className="block text-[11px] text-ink-subtle leading-snug">{desc}</span>
+              </button>
+            ))}
+          </div>
+        </Field>
+
         <details className="border border-slate-200 rounded-md">
           <summary className="px-3 py-2 cursor-pointer text-sm font-medium text-ink select-none">
             Advanced
