@@ -80,7 +80,7 @@ export function GolfHomeScreen() {
       <div className="flex justify-between items-end mb-5">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Golf Optimizer</h1>
-          <p className="text-sm text-ink-muted mt-1">{players.length} golfers loaded</p>
+          <p className="text-sm text-ink-muted mt-1">Tournament field</p>
         </div>
         <div className="flex gap-2">
           <button

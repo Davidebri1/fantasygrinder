@@ -103,6 +103,16 @@ const MMA_FIGHTERS: Array<[string, string, string]> = [
   ["Alex Pereira", "Jiri Prochazka", "Light Heavyweight"],
   ["Dustin Poirier", "Max Holloway", "Lightweight"],
   ["Zhang Weili", "Tatiana Suarez", "Women's Strawweight"],
+  ["Charles Oliveira", "Michael Chandler", "Lightweight"],
+  ["Ilia Topuria", "Justin Gaethje", "Lightweight"],
+  ["Dricus Du Plessis", "Sean Strickland", "Middleweight"],
+  ["Israel Adesanya", "Khamzat Chimaev", "Middleweight"],
+  ["Leon Edwards", "Belal Muhammad", "Welterweight"],
+  ["Tom Aspinall", "Ciryl Gane", "Heavyweight"],
+  ["Alexander Volkanovski", "Aljamain Sterling", "Featherweight"],
+  ["Petr Yan", "Cory Sandhagen", "Bantamweight"],
+  ["Amanda Nunes", "Kayla Harrison", "Women's Bantamweight"],
+  ["Valentina Shevchenko", "Alexa Grasso", "Women's Flyweight"],
 ];
 const MMA_SALARY_BUCKETS = [4500, 5500, 6500, 7500, 8500, 9500];
 
@@ -120,6 +130,26 @@ const MMA_HEADSHOT_URLS: Record<string, string> = {
   "Max Holloway": "https://a.espncdn.com/i/headshots/mma/players/full/2614933.png",
   "Zhang Weili": "https://a.espncdn.com/i/headshots/mma/players/full/4350762.png",
   "Tatiana Suarez": "https://a.espncdn.com/i/headshots/mma/players/full/4020435.png",
+  "Charles Oliveira": "https://a.espncdn.com/i/headshots/mma/players/full/2504169.png",
+  "Michael Chandler": "https://a.espncdn.com/i/headshots/mma/players/full/2504988.png",
+  "Ilia Topuria": "https://a.espncdn.com/i/headshots/mma/players/full/4350812.png",
+  "Justin Gaethje": "https://a.espncdn.com/i/headshots/mma/players/full/3022345.png",
+  "Dricus Du Plessis": "https://a.espncdn.com/i/headshots/mma/players/full/3166126.png",
+  "Sean Strickland": "https://a.espncdn.com/i/headshots/mma/players/full/3093653.png",
+  "Israel Adesanya": "https://a.espncdn.com/i/headshots/mma/players/full/4285679.png",
+  "Khamzat Chimaev": "https://a.espncdn.com/i/headshots/mma/players/full/4684751.png",
+  "Leon Edwards": "https://a.espncdn.com/i/headshots/mma/players/full/3152929.png",
+  "Belal Muhammad": "https://a.espncdn.com/i/headshots/mma/players/full/3172112.png",
+  "Tom Aspinall": "https://a.espncdn.com/i/headshots/mma/players/full/4010976.png",
+  "Ciryl Gane": "https://a.espncdn.com/i/headshots/mma/players/full/4426000.png",
+  "Alexander Volkanovski": "https://a.espncdn.com/i/headshots/mma/players/full/3949584.png",
+  "Aljamain Sterling": "https://a.espncdn.com/i/headshots/mma/players/full/3031559.png",
+  "Petr Yan": "https://a.espncdn.com/i/headshots/mma/players/full/4293517.png",
+  "Cory Sandhagen": "https://a.espncdn.com/i/headshots/mma/players/full/4294504.png",
+  "Amanda Nunes": "https://a.espncdn.com/i/headshots/mma/players/full/2516131.png",
+  "Valentina Shevchenko": "https://a.espncdn.com/i/headshots/mma/players/full/2554705.png",
+  "Alexa Grasso": "https://a.espncdn.com/i/headshots/mma/players/full/3136287.png",
+  "Kayla Harrison": "https://a.espncdn.com/i/headshots/mma/players/full/4332765.png",
 };
 
 export function buildMmaSample(): Player[] {
@@ -158,6 +188,11 @@ const GOLF_PLAYERS = [
   "Scottie Scheffler", "Rory McIlroy", "Jon Rahm", "Brooks Koepka",
   "Xander Schauffele", "Viktor Hovland", "Jordan Spieth", "Collin Morikawa",
   "Tommy Fleetwood", "Wyndham Clark", "Ludvig Aberg", "Patrick Cantlay",
+  "Tony Finau", "Sam Burns", "Justin Rose", "Shane Lowry",
+  "Sepp Straka", "Keegan Bradley", "Cameron Smith", "Joaquin Niemann",
+  "Tyrrell Hatton", "Matt Fitzpatrick", "Russell Henley", "Sungjae Im",
+  "Corey Conners", "Si Woo Kim", "Jason Day", "Adam Scott",
+  "Sahith Theegala", "Max Homa", "Cameron Young", "Hideki Matsuyama",
 ];
 const GOLF_SALARY_BUCKETS = [6500, 7000, 7500, 8000, 8500, 9000, 10000, 11000];
 
@@ -175,6 +210,26 @@ const GOLF_HEADSHOT_URLS: Record<string, string> = {
   "Wyndham Clark": "https://a.espncdn.com/i/headshots/golf/players/full/11119.png",
   "Ludvig Aberg": "https://a.espncdn.com/i/headshots/golf/players/full/4375972.png",
   "Patrick Cantlay": "https://a.espncdn.com/i/headshots/golf/players/full/6007.png",
+  "Tony Finau": "https://a.espncdn.com/i/headshots/golf/players/full/2230.png",
+  "Sam Burns": "https://a.espncdn.com/i/headshots/golf/players/full/9938.png",
+  "Justin Rose": "https://a.espncdn.com/i/headshots/golf/players/full/569.png",
+  "Shane Lowry": "https://a.espncdn.com/i/headshots/golf/players/full/4587.png",
+  "Sepp Straka": "https://a.espncdn.com/i/headshots/golf/players/full/8961.png",
+  "Keegan Bradley": "https://a.espncdn.com/i/headshots/golf/players/full/4513.png",
+  "Cameron Smith": "https://a.espncdn.com/i/headshots/golf/players/full/9131.png",
+  "Joaquin Niemann": "https://a.espncdn.com/i/headshots/golf/players/full/11099.png",
+  "Tyrrell Hatton": "https://a.espncdn.com/i/headshots/golf/players/full/5553.png",
+  "Matt Fitzpatrick": "https://a.espncdn.com/i/headshots/golf/players/full/9037.png",
+  "Russell Henley": "https://a.espncdn.com/i/headshots/golf/players/full/5409.png",
+  "Sungjae Im": "https://a.espncdn.com/i/headshots/golf/players/full/11382.png",
+  "Corey Conners": "https://a.espncdn.com/i/headshots/golf/players/full/9126.png",
+  "Si Woo Kim": "https://a.espncdn.com/i/headshots/golf/players/full/7081.png",
+  "Jason Day": "https://a.espncdn.com/i/headshots/golf/players/full/1680.png",
+  "Adam Scott": "https://a.espncdn.com/i/headshots/golf/players/full/388.png",
+  "Sahith Theegala": "https://a.espncdn.com/i/headshots/golf/players/full/10980.png",
+  "Max Homa": "https://a.espncdn.com/i/headshots/golf/players/full/8973.png",
+  "Cameron Young": "https://a.espncdn.com/i/headshots/golf/players/full/4425906.png",
+  "Hideki Matsuyama": "https://a.espncdn.com/i/headshots/golf/players/full/5860.png",
 };
 
 export function buildGolfSample(): Player[] {

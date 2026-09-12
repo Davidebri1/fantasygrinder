@@ -136,7 +136,7 @@ export function NbaHomeScreen() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">NBA Optimizer</h1>
           <p className="text-sm text-ink-muted mt-1">
-            {players.length} players loaded · {eligibleCount} eligible · {lastResult?.length ?? 0} lineups generated
+            {lastResult?.length ?? 0} lineups generated
           </p>
         </div>
         <div className="flex gap-2">
