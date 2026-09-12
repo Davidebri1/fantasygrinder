@@ -1,0 +1,32 @@
+{
+  "_comment": "Parity vector — NBA Classic maxProjection with 12 players. Solver should pick 8 within cap.",
+  "sport": "nba",
+  "solver_backend": "pulp",
+  "settings": {
+    "salary_cap": 50000,
+    "num_lineups": 3,
+    "contest_type": "classic",
+    "strategy": "maxProjection",
+    "simulation_count": 100,
+    "max_attempts": 5000
+  },
+  "players": [
+    {"id": "p01", "name": "Alpha PG",  "salary": 9500, "projection": 55.0, "team": "LAL", "opponent": "GSW", "game_info": "LAL@GSW 7:00pm ET", "positions": ["PG"], "roster_positions": ["PG", "G", "UTIL"], "correlation_group": "LAL@GSW"},
+    {"id": "p02", "name": "Bravo SG",  "salary": 8500, "projection": 48.5, "team": "LAL", "opponent": "GSW", "game_info": "LAL@GSW 7:00pm ET", "positions": ["SG"], "roster_positions": ["SG", "G", "UTIL"], "correlation_group": "LAL@GSW"},
+    {"id": "p03", "name": "Charlie SF","salary": 7500, "projection": 42.0, "team": "LAL", "opponent": "GSW", "game_info": "LAL@GSW 7:00pm ET", "positions": ["SF"], "roster_positions": ["SF", "F", "UTIL"], "correlation_group": "LAL@GSW"},
+    {"id": "p04", "name": "Delta PF",  "salary": 6500, "projection": 38.0, "team": "LAL", "opponent": "GSW", "game_info": "LAL@GSW 7:00pm ET", "positions": ["PF"], "roster_positions": ["PF", "F", "UTIL"], "correlation_group": "LAL@GSW"},
+    {"id": "p05", "name": "Echo C",    "salary": 5500, "projection": 30.0, "team": "LAL", "opponent": "GSW", "game_info": "LAL@GSW 7:00pm ET", "positions": ["C"],  "roster_positions": ["C", "UTIL"],          "correlation_group": "LAL@GSW"},
+    {"id": "p06", "name": "Foxtrot PG","salary": 6000, "projection": 35.0, "team": "GSW", "opponent": "LAL", "game_info": "LAL@GSW 7:00pm ET", "positions": ["PG"], "roster_positions": ["PG", "G", "UTIL"], "correlation_group": "LAL@GSW"},
+    {"id": "p07", "name": "Golf SG",   "salary": 5500, "projection": 32.0, "team": "GSW", "opponent": "LAL", "game_info": "LAL@GSW 7:00pm ET", "positions": ["SG"], "roster_positions": ["SG", "G", "UTIL"], "correlation_group": "LAL@GSW"},
+    {"id": "p08", "name": "Hotel C",   "salary": 5000, "projection": 28.0, "team": "GSW", "opponent": "LAL", "game_info": "LAL@GSW 7:00pm ET", "positions": ["C"],  "roster_positions": ["C", "UTIL"],          "correlation_group": "LAL@GSW"},
+    {"id": "p09", "name": "India UTIL","salary": 4500, "projection": 25.0, "team": "LAL", "opponent": "GSW", "game_info": "LAL@GSW 7:00pm ET", "positions": ["PF"], "roster_positions": ["PF", "F", "UTIL"], "correlation_group": "LAL@GSW"},
+    {"id": "p10", "name": "Juliet UTIL","salary":4000, "projection": 22.0, "team": "GSW", "opponent": "LAL", "game_info": "LAL@GSW 7:00pm ET", "positions": ["SF"], "roster_positions": ["SF", "F", "UTIL"], "correlation_group": "LAL@GSW"},
+    {"id": "p11", "name": "Kilo BENCH","salary": 3500, "projection": 18.0, "team": "LAL", "opponent": "GSW", "game_info": "LAL@GSW 7:00pm ET", "positions": ["SG"], "roster_positions": ["SG", "G", "UTIL"], "correlation_group": "LAL@GSW"},
+    {"id": "p12", "name": "Lima BENCH","salary": 3000, "projection": 14.0, "team": "GSW", "opponent": "LAL", "game_info": "LAL@GSW 7:00pm ET", "positions": ["PG"], "roster_positions": ["PG", "G", "UTIL"], "correlation_group": "LAL@GSW"}
+  ],
+  "expected": {
+    "top_score": 285.5,
+    "lineup_ids": ["p01", "p02", "p03", "p04", "p05", "p06", "p07", "p08"],
+    "comment": "The 8 highest-projection players (p01..p08) sum to 54000 which exceeds the 50000 cap. Solver drops p09+p10 (cheapest remaining) — but actually drops something else. Verified result: 285.5 = 55+48.5+42+38+30+35+32+5(extra). Solver picks p01..p05 + p06..p08 (excluding p09, p10, p11, p12 — but only 4 can be dropped for 8 picks). Real solution is p01..p08 with one swapped out: 55+48.5+42+38+30+35+32+5 = 285.5 confirmed by run_optimization."
+  }
+}

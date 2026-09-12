@@ -1,0 +1,27 @@
+{
+  "_comment": "Parity vector — NBA Showdown with 8 players, captain multiplier 1.5x.",
+  "sport": "nba",
+  "solver_backend": "pulp",
+  "settings": {
+    "salary_cap": 50000,
+    "num_lineups": 1,
+    "contest_type": "showdown",
+    "strategy": "maxProjection",
+    "simulation_count": 10
+  },
+  "players": [
+    {"id": "s01", "name": "Star PG",  "salary": 10500, "projection": 70.0, "team": "LAL", "opponent": "GSW", "positions": ["PG"], "roster_positions": ["PG", "UTIL"]},
+    {"id": "s02", "name": "Star SG",  "salary": 9500,  "projection": 55.0, "team": "LAL", "opponent": "GSW", "positions": ["SG"], "roster_positions": ["SG", "UTIL"]},
+    {"id": "s03", "name": "Star SF",  "salary": 8500,  "projection": 48.0, "team": "GSW", "opponent": "LAL", "positions": ["SF"], "roster_positions": ["SF", "UTIL"]},
+    {"id": "s04", "name": "Backup1",  "salary": 7500,  "projection": 42.0, "team": "LAL", "opponent": "GSW", "positions": ["PF"], "roster_positions": ["PF", "UTIL"]},
+    {"id": "s05", "name": "Backup2",  "salary": 7000,  "projection": 36.0, "team": "GSW", "opponent": "LAL", "positions": ["C"],  "roster_positions": ["C", "UTIL"]},
+    {"id": "s06", "name": "Backup3",  "salary": 5500,  "projection": 30.0, "team": "LAL", "opponent": "GSW", "positions": ["SF"], "roster_positions": ["SF", "UTIL"]},
+    {"id": "s07", "name": "Bench",    "salary": 3000,  "projection": 14.0, "team": "GSW", "opponent": "LAL", "positions": ["SG"], "roster_positions": ["SG", "UTIL"]},
+    {"id": "s08", "name": "Bench2",   "salary": 2500,  "projection": 8.0,  "team": "LAL", "opponent": "GSW", "positions": ["PG"], "roster_positions": ["PG", "UTIL"]}
+  ],
+  "expected": {
+    "top_score": 316.0,
+    "comment": "CPT = Star PG (70*1.5=105). 5 FLEX: Star SG(55)+Star SF(48)+Backup1(42)+Backup2(36)+Backup3(30) = 211. Total = 316. Salary = 10500+9500+8500+7500+7000+5500 = 48500 ≤ 50000.",
+    "lineup_ids": ["s01", "s02", "s03", "s04", "s05", "s06"]
+  }
+}

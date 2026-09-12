@@ -1,0 +1,31 @@
+{
+  "_comment": "Parity vector — Golf Classic 12 golfers, 6 picks.",
+  "sport": "golf",
+  "solver_backend": "pulp",
+  "settings": {
+    "salary_cap": 50000,
+    "num_lineups": 2,
+    "strategy": "maxProjection",
+    "simulation_count": 10,
+    "roster_size": 6
+  },
+  "players": [
+    {"id": "g01", "name": "Scheffler",  "salary": 11000, "projection": 95.0},
+    {"id": "g02", "name": "McIlroy",    "salary": 10500, "projection": 90.0},
+    {"id": "g03", "name": "Rahm",       "salary": 10000, "projection": 85.0},
+    {"id": "g04", "name": "Koepka",     "salary": 9000,  "projection": 75.0},
+    {"id": "g05", "name": "Schauffele", "salary": 8500,  "projection": 70.0},
+    {"id": "g06", "name": "Hovland",    "salary": 8000,  "projection": 65.0},
+    {"id": "g07", "name": "Thomas",     "salary": 7500,  "projection": 60.0},
+    {"id": "g08", "name": "Morikawa",   "salary": 7000,  "projection": 55.0},
+    {"id": "g09", "name": "Fleetwood",  "salary": 6500,  "projection": 50.0},
+    {"id": "g10", "name": "Clark",      "salary": 6000,  "projection": 48.0},
+    {"id": "g11", "name": "Aberg",      "salary": 5500,  "projection": 45.0},
+    {"id": "g12", "name": "Cantlay",    "salary": 5000,  "projection": 42.0}
+  ],
+  "expected": {
+    "top_score": 422.0,
+    "lineup_ids": ["g01", "g02", "g03", "g06", "g11", "g12"],
+    "comment": "Verified by run_optimization. Top 3 (g01+g02+g03 = 30.5k) + cheapest 3 within remaining cap (g12=5k, g11=5.5k, g06=8k) = 30.5+5+5.5+8 = 49k ≤ 50k. Projection: 95+90+85+65+45+42 = 422."
+  }
+}

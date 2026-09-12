@@ -1,0 +1,477 @@
+openapi: 3.1.0
+info:
+  title: Fantasy Grinder API
+  description: |
+    REST API for Fantasy Grinder — DFS lineup optimizer for NBA, MMA, and Golf.
+    Replaces the Flutter app's inline Supabase + compute calls with a Django backend.
+  version: "1.0.0"
+  contact:
+    name: Fantasy Grinder Engineering
+
+servers:
+  - url: https://api.fantasygrinder.example
+    description: Production
+  - url: http://localhost:8000
+    description: Local dev
+
+tags:
+  - name: slates
+  - name: players
+  - name: optimize
+  - name: import
+  - name: export
+  - name: feeds
+
+paths:
+  /api/slates/:
+    get:
+      tags: [slates]
+      summary: List slates for a sport
+      parameters:
+        - in: query
+          name: sport
+          required: true
+          schema: { type: string, enum: [nba, mma, golf] }
+        - in: query
+          name: not_before_date
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Active slates ordered by date/time
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Slate" }
+    post:
+      tags: [slates]
+      summary: Create a new slate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SlateCreate" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Slate" }
+
+  /api/slates/{slate_id}/:
+    get:
+      tags: [slates]
+      summary: Fetch one slate with its players
+      parameters:
+        - in: path
+          name: slate_id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Slate detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SlateDetail" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/players/:
+    get:
+      tags: [players]
+      summary: List players for the active slate
+      parameters:
+        - in: query
+          name: sport
+          required: true
+          schema: { type: string, enum: [nba, mma, golf] }
+        - in: query
+          name: slate_id
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Players
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Player" }
+
+  /api/import/csv/:
+    post:
+      tags: [import]
+      summary: Import a DraftKings CSV roster
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [sport, file]
+              properties:
+                sport: { type: string, enum: [nba, mma, golf] }
+                file: { type: string, format: binary }
+      responses:
+        "200":
+          description: Imported players preview
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportPreview" }
+
+  /api/import/excel/:
+    post:
+      tags: [import]
+      summary: Import a DraftKings XLSX roster
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [sport, file]
+              properties:
+                sport: { type: string, enum: [nba, mma, golf] }
+                file: { type: string, format: binary }
+      responses:
+        "200":
+          description: Imported players preview
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportPreview" }
+
+  /api/optimize/:
+    post:
+      tags: [optimize]
+      summary: Generate optimized lineups
+      description: |
+        The core endpoint. Accepts the active player pool and optimizer settings,
+        returns top-K lineups. `solver_backend` defaults to `pulp` (CBC) for parity;
+        set to `ortools` for CP-SAT speed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OptimizeRequest" }
+      responses:
+        "200":
+          description: Generated lineups + metadata
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OptimizeResponse" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /api/export/csv/:
+    post:
+      tags: [export]
+      summary: Export lineups to CSV
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lineups]
+              properties:
+                lineups:
+                  type: array
+                  items: { $ref: "#/components/schemas/Lineup" }
+      responses:
+        "200":
+          description: CSV download
+          content:
+            text/csv:
+              schema: { type: string }
+
+  /api/export/excel/:
+    post:
+      tags: [export]
+      summary: Export lineups to XLSX
+      responses:
+        "200":
+          description: XLSX download
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+
+  /api/export/injury-pdf/:
+    get:
+      tags: [export]
+      summary: Generate the NBA injury PDF report
+      responses:
+        "200":
+          description: PDF
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+
+  /api/feed/odds/:
+    post:
+      tags: [feeds]
+      summary: Pull player props from The Odds API into the active NBA slate
+      responses:
+        "200":
+          description: Merged player projections
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  matched: { type: integer }
+                  unmatched: { type: integer }
+
+  /api/feed/espn/:
+    post:
+      tags: [feeds]
+      summary: Sync NBA injury + news from ESPN
+      responses:
+        "200":
+          description: Sync result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FeedSyncResult" }
+
+components:
+  responses:
+    BadRequest:
+      description: Validation failure
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+
+    Slate:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        sport: { type: string, enum: [nba, mma, golf] }
+        slate_date: { type: string, format: date }
+        slate_time: { type: string }
+        name: { type: string }
+        file_name: { type: string }
+        is_active: { type: boolean }
+        created_at: { type: string, format: date-time }
+
+    SlateCreate:
+      type: object
+      required: [sport, slate_date, slate_time, name]
+      properties:
+        sport: { type: string, enum: [nba, mma, golf] }
+        slate_date: { type: string, format: date }
+        slate_time: { type: string }
+        name: { type: string }
+        source_format: { type: string, enum: [csv, excel] }
+        roster_blob: { type: string, format: binary }
+
+    SlateDetail:
+      allOf:
+        - $ref: "#/components/schemas/Slate"
+        - type: object
+          properties:
+            players:
+              type: array
+              items: { $ref: "#/components/schemas/Player" }
+
+    Player:
+      type: object
+      description: Sport-keyed player record. NBA includes positions & team; MMA includes opponent, bout, salary; Golf includes salary & tee time.
+      properties:
+        id: { type: string }
+        name: { type: string }
+        sport: { type: string, enum: [nba, mma, golf] }
+        salary: { type: integer }
+        projection: { type: number, format: double }
+        user_projection: { type: number, format: double }
+        team: { type: string }
+        opponent: { type: string }
+        game_info: { type: string }
+        game_time: { type: string, format: date-time, nullable: true }
+        projected_ownership: { type: number, format: double }
+        max_ownership: { type: number, format: double }
+        min_exposure: { type: number, format: double }
+        max_exposure: { type: number, format: double }
+        stddev: { type: number, format: double, nullable: true }
+        positions:
+          type: array
+          items: { type: string }
+        roster_positions:
+          type: array
+          items: { type: string }
+        correlation_group: { type: string }
+        is_locked: { type: boolean }
+        is_excluded: { type: boolean }
+        is_liked: { type: boolean }
+        injury_status: { type: string, nullable: true }
+        injury_severity: { type: string, nullable: true }
+        injury_short_comment: { type: string, nullable: true }
+
+    Lineup:
+      type: object
+      required: [assignments, total_salary, total_projection]
+      properties:
+        assignments:
+          type: array
+          items: { $ref: "#/components/schemas/SlotAssignment" }
+        total_salary: { type: integer }
+        total_projection: { type: number, format: double }
+        total_ceiling: { type: number, format: double }
+        teams:
+          type: array
+          items: { type: string }
+        games:
+          type: array
+          items: { type: string }
+        unique_key: { type: string }
+        strategy: { type: string }
+        rank: { type: integer }
+
+    SlotAssignment:
+      type: object
+      required: [slot, player]
+      properties:
+        slot:
+          type: string
+          description: Display label, e.g. PG / SG / CPT / FLEX
+        score_multiplier: { type: number, format: double }
+        player: { $ref: "#/components/schemas/Player" }
+
+    OptimizeRequest:
+      type: object
+      required: [sport, settings, players]
+      properties:
+        sport: { type: string, enum: [nba, mma, golf] }
+        solver_backend:
+          type: string
+          enum: [pulp, ortools]
+          default: pulp
+        settings:
+          oneOf:
+            - $ref: "#/components/schemas/NbaSettings"
+            - $ref: "#/components/schemas/MmaSettings"
+            - $ref: "#/components/schemas/GolfSettings"
+        players:
+          type: array
+          items: { $ref: "#/components/schemas/Player" }
+        include_lineup_ids:
+          type: array
+          items: { type: string }
+          description: For de-duplication against prior runs
+        seeds:
+          type: object
+          description: Deterministic seed for simulation strategies
+          properties:
+            monte_carlo: { type: integer }
+            perturbation: { type: integer }
+
+    OptimizeResponse:
+      type: object
+      required: [lineups, run_metadata]
+      properties:
+        lineups:
+          type: array
+          items: { $ref: "#/components/schemas/Lineup" }
+        run_metadata:
+          type: object
+          properties:
+            solver_backend: { type: string }
+            strategy: { type: string }
+            simulation_count: { type: integer }
+            elapsed_ms: { type: integer }
+            warnings:
+              type: array
+              items: { type: string }
+
+    NbaSettings:
+      type: object
+      properties:
+        salary_cap: { type: integer, default: 50000 }
+        num_lineups: { type: integer, default: 20 }
+        contest_type:
+          type: string
+          enum: [classic, showdown]
+          default: classic
+        strategy:
+          type: string
+          enum: [monteCarlo, maxProjection, contrarian, balanced, salaryCap]
+          default: monteCarlo
+        max_exposure: { type: number, format: double, default: 100 }
+        max_attempts: { type: integer, default: 5000 }
+        enable_bring_back: { type: boolean, default: false }
+        bring_back_count: { type: integer, default: 1 }
+        global_min_players_per_team: { type: integer, default: 0 }
+        global_max_players_per_team: { type: integer, default: 0 }
+        team_stacking_rules:
+          type: array
+          items:
+            type: object
+            properties:
+              team: { type: string }
+              min_players: { type: integer }
+              max_players: { type: integer }
+        excluded_teams:
+          type: array
+          items: { type: string }
+        respect_game_times: { type: boolean, default: true }
+        min_projection: { type: number, format: double, default: 0 }
+        simulation_count: { type: integer, default: 10000 }
+        teammate_correlation: { type: number, format: double, default: 0.35 }
+        opponent_correlation: { type: number, format: double, default: 0.20 }
+
+    MmaSettings:
+      type: object
+      properties:
+        salary_cap: { type: integer, default: 50000 }
+        num_lineups: { type: integer, default: 20 }
+        strategy:
+          type: string
+          enum: [monteCarlo, maxProjection, contrarian, balanced, salaryCap]
+        roster_size: { type: integer, default: 6 }
+        allow_opponents: { type: boolean, default: true }
+        max_exposure: { type: number, format: double }
+        min_projection: { type: number, format: double }
+        simulation_count: { type: integer, default: 10000 }
+        opponent_correlation: { type: number, format: double, default: -0.40 }
+        card_correlation: { type: number, format: double, default: 0.10 }
+
+    GolfSettings:
+      type: object
+      properties:
+        salary_cap: { type: integer, default: 50000 }
+        num_lineups: { type: integer, default: 20 }
+        strategy:
+          type: string
+          enum: [monteCarlo, maxProjection, contrarian, balanced, salaryCap]
+        roster_size: { type: integer, default: 6 }
+        max_exposure: { type: number, format: double }
+        simulation_count: { type: integer, default: 10000 }
+
+    ImportPreview:
+      type: object
+      properties:
+        sport: { type: string }
+        players:
+          type: array
+          items: { $ref: "#/components/schemas/Player" }
+        warnings:
+          type: array
+          items: { type: string }
+
+    FeedSyncResult:
+      type: object
+      properties:
+        synced: { type: integer }
+        skipped: { type: integer }
+        warnings:
+          type: array
+          items: { type: string }

@@ -1,0 +1,29 @@
+{
+  "_comment": "Parity vector — MMA Classic 8 fighters, 2 bouts, allow_opponents=False.",
+  "sport": "mma",
+  "solver_backend": "pulp",
+  "settings": {
+    "salary_cap": 50000,
+    "num_lineups": 2,
+    "strategy": "maxProjection",
+    "simulation_count": 100,
+    "allow_opponents": false,
+    "opponent_correlation": -0.40,
+    "card_correlation": 0.10
+  },
+  "players": [
+    {"id": "f01", "name": "Fighter Alpha",  "salary": 9500, "projection": 88.0, "opponent_id": "f02", "bout": "Main Event"},
+    {"id": "f02", "name": "Fighter Bravo",  "salary": 8500, "projection": 75.0, "opponent_id": "f01", "bout": "Main Event"},
+    {"id": "f03", "name": "Fighter Charlie","salary": 7500, "projection": 70.0, "opponent_id": "f04", "bout": "Co-Main"},
+    {"id": "f04", "name": "Fighter Delta",  "salary": 7000, "projection": 65.0, "opponent_id": "f03", "bout": "Co-Main"},
+    {"id": "f05", "name": "Fighter Echo",   "salary": 6500, "projection": 58.0, "opponent_id": "f06", "bout": "Undercard 1"},
+    {"id": "f06", "name": "Fighter Foxtrot","salary": 6000, "projection": 52.0, "opponent_id": "f05", "bout": "Undercard 1"},
+    {"id": "f07", "name": "Fighter Golf",   "salary": 5500, "projection": 48.0, "opponent_id": "f08", "bout": "Undercard 2"},
+    {"id": "f08", "name": "Fighter Hotel",  "salary": 5000, "projection": 42.0, "opponent_id": "f07", "bout": "Undercard 2"}
+  ],
+  "expected": {
+    "comment": "Opponent exclusion: max 1 per bout. With 4 bouts, can pick max 4 fighters. Pick the highest-proj one per bout: f01(88), f03(70), f05(58), f07(48) = 264.0.",
+    "lineup_ids": ["f01", "f03", "f05", "f07"],
+    "top_score": 264.0
+  }
+}

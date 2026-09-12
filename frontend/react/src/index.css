@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: theme(colors.slate.50);
+  color: theme(colors.ink.DEFAULT);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+/* Tabular numbers for stat columns */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+[data-state="open"] > svg.chevron {
+  transform: rotate(180deg);
+}
+
+[data-state] svg.chevron {
+  transition: transform 150ms ease-out;
+}
+
+@keyframes spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.spin {
+  animation: spinner 1s linear infinite;
+}

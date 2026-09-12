@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# Fantasy Grinder — one-command local dev launcher (macOS/Linux).
+#
+#   ./bin/dev           # full setup + start
+#   ./bin/dev --reset   # nuke .venv, dist, db.sqlite3, node_modules and start over
+#
+# Open http://localhost:8000 — that's the app.
+
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+if [[ "${1:-}" == "--reset" ]]; then
+    echo "[dev] --reset: removing .venv, dist, db.sqlite3, node_modules"
+    rm -rf backend/django/.venv
+    rm -f backend/django/db.sqlite3
+    rm -rf frontend/react/dist
+    rm -rf frontend/react/node_modules
+fi
+
+# Backend venv + deps
+VENV="$ROOT/backend/django/.venv"
+if [[ ! -d $VENV ]]; then
+    echo "[dev] creating venv at $VENV"
+    python3 -m venv "$VENV"
+fi
+# shellcheck disable=SC1091
+source "$VENV/bin/activate"
+pip install --quiet --upgrade pip
+pip install --quiet -r "$ROOT/backend/django/requirements.txt"
+
+# Frontend
+if [[ ! -d "$ROOT/frontend/react/node_modules" ]]; then
+    echo "[dev] installing frontend deps (one-time, ~60s)"
+    (cd "$ROOT/frontend/react" && npm install --silent)
+fi
+if [[ ! -f "$ROOT/frontend/react/dist/index.html" ]]; then
+    echo "[dev] building frontend (one-time, ~10s)"
+    (cd "$ROOT/frontend/react" && npm run build)
+fi
+
+# DB
+cd "$ROOT/backend/django"
+export DJANGO_SETTINGS_MODULE="config.settings_dev"
+export PYTHONPATH="."
+if [[ ! -f db.sqlite3 ]] || [[ "${1:-}" == "--reset" ]]; then
+    python manage.py makemigrations common nba mma golf --noinput
+    python manage.py migrate --noinput
+    python manage.py load_sample_data
+fi
+
+# Run
+echo ""
+echo "================================================================"
+echo "  Fantasy Grinder is starting..."
+echo "    Open: http://localhost:8000/"
+echo "  Press Ctrl+C to stop."
+echo "================================================================"
+echo ""
+
+python manage.py runserver 0.0.0.0:8000 --noreload
