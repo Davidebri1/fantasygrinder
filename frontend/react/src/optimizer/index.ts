@@ -100,11 +100,19 @@ export function runOptimize(
   const forbidden: Set<number>[] = [];
   const wantUnique = settings.uniqueLineups !== false;
 
+  let solves = 0;
+  let duplicatesDropped = 0;
+  let infeasibleSolves = 0;
+
   for (const strat of plan) {
     const spec = buildSpecForSport(eligible, strat.scores, settings, forbidden);
     if (spec === null) continue;
+    solves += 1;
     const result = solveMilp(spec);
-    if (result.status !== "Optimal" || result.selectedIdx.length === 0) continue;
+    if (result.status !== "Optimal" || result.selectedIdx.length === 0) {
+      infeasibleSolves += 1;
+      continue;
+    }
 
     const lineup = buildLineupForSport(
       result.selectedIdx,
@@ -117,7 +125,10 @@ export function runOptimize(
     // We accept incomplete slot assignments (bipartite may fail on
     // degenerate top-of-projection picks). The UI shows whatever
     // slots were filled; missing slots are omitted.
-    if (collected.find((l) => l.uniqueKey === lineup.uniqueKey)) continue;
+    if (collected.find((l) => l.uniqueKey === lineup.uniqueKey)) {
+      duplicatesDropped += 1;
+      continue;
+    }
     collected.push(lineup);
     forbidden.push(new Set(result.selectedIdx));
 
@@ -143,6 +154,14 @@ export function runOptimize(
       warnings: [
         "Unique lineups off — the single optimal lineup was repeated. Turn it on for multi-entry portfolio diversity.",
       ],
+      telemetry: {
+        requested: settings.numLineups,
+        solves,
+        uniqueFound: 1,
+        duplicatesDropped,
+        infeasibleSolves,
+        shortBy: 0,
+      },
     };
   }
 
@@ -151,12 +170,29 @@ export function runOptimize(
   collected.forEach((l, i) => (l.rank = i + 1));
   const top = collected.slice(0, settings.numLineups);
 
+  const shortBy = Math.max(0, settings.numLineups - collected.length);
+  if (shortBy > 0) {
+    warnings.push(
+      `Requested ${settings.numLineups} unique lineups; produced ${collected.length} ` +
+        `(${solves} solves, ${duplicatesDropped} duplicates dropped, ${infeasibleSolves} infeasible). ` +
+        `The pool or constraints don't allow more distinct lineups.`,
+    );
+  }
+
   return {
     lineups: top,
     strategy: settings.strategy,
     solverBackend: "browser",
     elapsedMs: Math.round(performance.now() - started),
     warnings,
+    telemetry: {
+      requested: settings.numLineups,
+      solves,
+      uniqueFound: collected.length,
+      duplicatesDropped,
+      infeasibleSolves,
+      shortBy,
+    },
   };
 }
 

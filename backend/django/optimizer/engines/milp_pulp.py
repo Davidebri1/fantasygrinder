@@ -151,11 +151,13 @@ def solve_pulp(spec: SolverSpec) -> SolverResult:
         if player_idx is not None:
             problem += x[player_idx] == 1, f"pre_assign_{slot_idx}"
 
-    # Forbidden pair sets (treat as: at most one from each)
+    # Forbidden lineups — a no-good cut: at most |set|-1 of the set may be
+    # selected, i.e. this exact lineup is excluded but every subset is allowed.
+    # (Earlier this used `<= 1`, which wrongly banned almost the whole lineup.)
     for idx_set in spec.forbidden_idx_sets:
         if idx_set:
             problem += (
-                pulp.lpSum(x[i] for i in idx_set) <= 1,
+                pulp.lpSum(x[i] for i in idx_set) <= len(idx_set) - 1,
                 f"forbid_set_{'_'.join(map(str, sorted(idx_set)))}",
             )
 

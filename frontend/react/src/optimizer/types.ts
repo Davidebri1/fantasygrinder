@@ -109,4 +109,21 @@ export interface OptimizeResult {
   solverBackend: SolverBackend;
   elapsedMs: number;
   warnings: string[];
+  /** Observable run counts — so de-dup is never a silent black box. */
+  telemetry?: OptimizeTelemetry;
+}
+
+export interface OptimizeTelemetry {
+  /** Lineups the caller asked for. */
+  requested: number;
+  /** Solver invocations performed. */
+  solves: number;
+  /** Distinct lineups collected. */
+  uniqueFound: number;
+  /** Solves that returned an already-seen lineup (dropped). */
+  duplicatesDropped: number;
+  /** Solves that returned infeasible / no lineup. */
+  infeasibleSolves: number;
+  /** requested − uniqueFound (0 when fully satisfied). */
+  shortBy: number;
 }

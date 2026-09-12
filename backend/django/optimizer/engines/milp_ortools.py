@@ -62,10 +62,10 @@ def solve_ortools(spec: SolverSpec) -> SolverResult:
         if player_idx is not None:
             model.Add(x[player_idx] == 1)
 
-    # Forbidden pairs
+    # Forbidden lineups — no-good cut: exclude the exact set, allow subsets.
     for idx_set in spec.forbidden_idx_sets:
         if idx_set:
-            model.Add(sum(x[i] for i in idx_set) <= 1)
+            model.Add(sum(x[i] for i in idx_set) <= len(idx_set) - 1)
 
     # Custom sport constraints
     for c in spec.extra_constraints:

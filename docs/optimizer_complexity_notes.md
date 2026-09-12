@@ -7,22 +7,37 @@ example of the scientific method applied to code.
 
 Asked for **20 lineups** with the Max Projection strategy. Got **3**.
 
-Rerunning gave *different* lineups. Compute time grew super-linearly: fine
-at 30 players, but a 150-lineup run took ~1.5 s and larger pools stalled.
+Rerunning gave *different* lineups. Compute time grew super-linearly:
+fine at 30 players; a 150-lineup run took well under a second, but it was
+still doing wasted work and larger pools stalled.
 
 ## Root causes (two, stacked)
 
-1. **The no-duplicate rule was passed but never enforced.**
-   To generate N lineups you solve, then tell the solver "not this exact
-   lineup again" (a *forbidden set*), then re-solve. The browser solver
-   accepted the forbidden sets and silently ignored them, so every solve
-   returned the *same* optimal lineup. The final list was de-duplicated,
-   so 20 solves surfaced as 3 unique survivors.
+1. **The no-duplicate rule was wrong in the Python engine and absent in the
+   browser engine.** In the Python MILP the no-good cut was written as
+   `sum(x over the lineup) <= 1` — "at most one of those players" — which
+   bans almost the entire previous lineup instead of just the exact
+   combination. In the TypeScript browser solver the constraint was passed
+   in but never applied at all, so every solve returned the *same* optimal
+   lineup. The final list was de-duplicated, so 20 solves surfaced as 3
+   unique survivors.
+
+   Correct form: `sum(x over the lineup) <= |lineup| - 1` — exclude the
+   exact set, allow every subset.
 
 2. **Random projection jitter (±5%) was layered on top.**
    Intended to create variety, it instead made *deterministic* strategies
    stochastic — the same input produced different output across runs. If
    the answer only changes by rerunning, the model is guessing, not solving.
+
+## Silent de-duplication (an observability failure)
+
+The repeats were thrown away at the end with no record — no count of
+duplicates, no shortfall warning, nothing in the output. You cannot reason
+about uniqueness you never see. The fix: the run now reports its counts —
+requested, solves, unique found, duplicates dropped, infeasible, short-by —
+in the result telemetry and in the UI, and warns when it can't reach the
+requested count.
 
 ## Why it was slow (the "quadratic" the eye catches)
 
@@ -54,9 +69,10 @@ the Python backend uses those and stays fast.
 |---|---|---|
 | Lineups for `numLineups=20` | 3 (deduped from repeats) | 20 distinct |
 | Determinism (fixed input) | varies run to run | identical every run |
-| Forbidden/no-duplicate rule | passed, ignored | enforced as a hard constraint |
-| 150 lineups | stalls / grows super-linearly | ~1.5 s |
+| Forbidden/no-duplicate rule | wrong formula (Py) / ignored (TS) | enforced as a hard no-good cut |
+| 150 lineups | big wasted re-search, stalls at scale | <1 s |
 | Solver bound | greedy, worst case 2^n | pruned by the exclusion constraint |
+| De-dup | silent, unlogged | reported: solves / dropped / unique / short-by |
 
 ## The numbers that settle the strategy question
 

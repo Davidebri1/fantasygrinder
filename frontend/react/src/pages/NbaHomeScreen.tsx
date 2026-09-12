@@ -30,6 +30,15 @@ export function NbaHomeScreen() {
   const [tab, setTab] = useState<Tab>("pool");
   const [running, setRunning] = useState(false);
   const [lastMs, setLastMs] = useState<number | null>(null);
+  const [telemetry, setTelemetry] = useState<{
+    requested: number;
+    solves: number;
+    uniqueFound: number;
+    duplicatesDropped: number;
+    infeasibleSolves: number;
+    shortBy: number;
+  } | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
 
   const players = useAppStore((s) => s.players["nba"]);
   const loadSample = useAppStore((s) => s.loadSample);
@@ -114,6 +123,8 @@ export function NbaHomeScreen() {
         })),
       );
       setLastMs(result.elapsedMs);
+      setTelemetry(result.telemetry ?? null);
+      setWarnings(result.warnings ?? []);
       setRunning(false);
       setTab("results");
     }, 30);
@@ -188,6 +199,41 @@ export function NbaHomeScreen() {
                 <Activity className="w-4 h-4 text-accent" />
                 Last run · {lastMs}ms · browser solver
               </div>
+              {telemetry && (
+                <dl className="mt-2 text-[11px] text-ink-subtle grid grid-cols-2 gap-x-3 gap-y-0.5 tabular-nums">
+                  <div className="flex justify-between">
+                    <dt>requested</dt>
+                    <dd>{telemetry.requested}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt>solves</dt>
+                    <dd>{telemetry.solves}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt>unique found</dt>
+                    <dd>{telemetry.uniqueFound}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt>duplicates dropped</dt>
+                    <dd>{telemetry.duplicatesDropped}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt>infeasible</dt>
+                    <dd>{telemetry.infeasibleSolves}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt>short by</dt>
+                    <dd>{telemetry.shortBy}</dd>
+                  </div>
+                </dl>
+              )}
+              {warnings.length > 0 && (
+                <ul className="mt-2 text-[11px] text-accent-warning space-y-0.5 list-disc list-inside">
+                  {warnings.map((w, i) => (
+                    <li key={i}>{w}</li>
+                  ))}
+                </ul>
+              )}
             </Card>
           )}
         </div>
