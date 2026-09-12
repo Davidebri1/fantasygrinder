@@ -27,11 +27,13 @@ import {
 } from "./simulate";
 import { buildStrategyPlan } from "./strategies";
 import { lpRelaxation } from "./lp";
+import { solveNbaClassic } from "./nba_classic";
 import type {
   Lineup,
   OptimizeResult,
   OptimizerSettings,
   Player,
+  SlotAssignment,
   Sport,
 } from "./types";
 
@@ -99,16 +101,53 @@ export function runOptimize(
   const plan = buildStrategyPlan(settings.strategy, eligible, settings, simulatedRows);
   const collected: Lineup[] = [];
   const forbidden: Set<number>[] = [];
+  const forbiddenKeys = new Set<string>();
   const wantUnique = settings.uniqueLineups !== false;
+
+  const lockedIdx = new Set<number>();
+  const excludedIdx = new Set<number>();
+  for (let i = 0; i < eligible.length; i++) {
+    if (eligible[i].isLocked) lockedIdx.add(i);
+    if (eligible[i].isExcluded) excludedIdx.add(i);
+  }
+  const isNbaClassic =
+    settings.sport === "nba" && (settings.contestType ?? "classic") === "classic";
 
   let solves = 0;
   let duplicatesDropped = 0;
   let infeasibleSolves = 0;
 
   for (const strat of plan) {
+    solves += 1;
+
+    // NBA Classic: position-aware solve — every result is a legal 8-slot lineup.
+    if (isNbaClassic) {
+      const res = solveNbaClassic({
+        players: eligible,
+        scores: strat.scores,
+        salaryCap: settings.salaryCap,
+        lockedIdx,
+        excludedIdx,
+        forbiddenKeys,
+      });
+      if (!res) {
+        infeasibleSolves += 1;
+        continue;
+      }
+      const lineup = buildClassicLineup(res.assignments, eligible, settings.strategy);
+      if (collected.find((l) => l.uniqueKey === lineup.uniqueKey)) {
+        duplicatesDropped += 1;
+        continue;
+      }
+      collected.push(lineup);
+      forbiddenKeys.add(keyOf(res.assignments.map((a) => a.playerIdx)));
+      if (!wantUnique) break;
+      if (collected.length >= settings.numLineups) break;
+      continue;
+    }
+
     const spec = buildSpecForSport(eligible, strat.scores, settings, forbidden);
     if (spec === null) continue;
-    solves += 1;
     const result = solveMilp(spec);
     if (result.status !== "Optimal" || result.selectedIdx.length === 0) {
       infeasibleSolves += 1;
@@ -123,9 +162,6 @@ export function runOptimize(
       settings.strategy,
       0,
     );
-    // We accept incomplete slot assignments (bipartite may fail on
-    // degenerate top-of-projection picks). The UI shows whatever
-    // slots were filled; missing slots are omitted.
     if (collected.find((l) => l.uniqueKey === lineup.uniqueKey)) {
       duplicatesDropped += 1;
       continue;
@@ -182,12 +218,6 @@ export function runOptimize(
 
   // LP relaxation bound — the "simplex" view. Deterministic and identical
   // for both solver modes; reported so the bound is visible.
-  const lockedIdx = new Set<number>();
-  const excludedIdx = new Set<number>();
-  for (let i = 0; i < eligible.length; i++) {
-    if (eligible[i].isLocked) lockedIdx.add(i);
-    if (eligible[i].isExcluded) excludedIdx.add(i);
-  }
   const rosterSizeForLp = SPORT_ROSTER[settings.sport](settings);
   const baseScores = plan[0]?.scores ?? eligible.map((p) => p.projection);
   const lp = lpRelaxation(
@@ -216,6 +246,53 @@ export function runOptimize(
       solver: solverName,
       lpBound: Math.round(lp.bound * 100) / 100,
     },
+  };
+}
+
+/** Stable key for a set of player indices (order-independent). */
+function keyOf(indices: number[]): string {
+  return [...indices].sort((a, b) => a - b).join("|");
+}
+
+/** Build a Lineup from a position-aware NBA Classic assignment. */
+function buildClassicLineup(
+  assignments: { slot: string; playerIdx: number }[],
+  players: Player[],
+  strategy: string,
+): Lineup {
+  const slotAssignments: SlotAssignment[] = assignments.map((a) => ({
+    slot: a.slot,
+    scoreMultiplier: 1.0,
+    playerId: players[a.playerIdx].id,
+    playerName: players[a.playerIdx].name,
+  }));
+  const totalSalary = assignments.reduce((s, a) => s + players[a.playerIdx].salary, 0);
+  const totalProjection = assignments.reduce(
+    (s, a) => s + (players[a.playerIdx].userProjection ?? players[a.playerIdx].projection),
+    0,
+  );
+  const totalCeiling = assignments.reduce((s, a) => s + players[a.playerIdx].projection, 0);
+  const teams = Array.from(
+    new Set(assignments.map((a) => players[a.playerIdx].team).filter((t) => !!t) as string[]),
+  );
+  const games = Array.from(
+    new Set(
+      assignments
+        .map((a) => players[a.playerIdx].correlationGroup ?? "")
+        .filter((g) => !!g),
+    ),
+  );
+  return {
+    assignments: slotAssignments,
+    strategy: strategy as Lineup["strategy"],
+    solverBackend: "browser",
+    rank: 0,
+    totalSalary,
+    totalProjection,
+    totalCeiling,
+    teams,
+    games,
+    uniqueKey: keyOf(assignments.map((a) => a.playerIdx)),
   };
 }
 

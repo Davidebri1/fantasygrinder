@@ -74,7 +74,7 @@ export function buildStrategyPlan(
   // an identical result.
   if (strategy === "maxProjection") {
     const base = scoreMaxProjection(players);
-    const count = Math.max(1, settings.numLineups);
+    const count = Math.max(1, settings.numLineups * 3);
     return Array.from({ length: count }, (_, i) => ({
       scores: base,
       iteration: i,
@@ -83,7 +83,7 @@ export function buildStrategyPlan(
   }
   if (strategy === "balanced") {
     const base = scoreBalanced(players);
-    const count = Math.max(1, settings.numLineups);
+    const count = Math.max(1, settings.numLineups * 3);
     return Array.from({ length: count }, (_, i) => ({
       scores: base,
       iteration: i,
@@ -92,7 +92,7 @@ export function buildStrategyPlan(
   }
   if (strategy === "salaryCap") {
     const base = scoreSalaryCap(players);
-    const count = Math.max(1, settings.numLineups);
+    const count = Math.max(1, settings.numLineups * 3);
     return Array.from({ length: count }, (_, i) => ({
       scores: base,
       iteration: i,

@@ -48,34 +48,54 @@ function effectiveCorrelationGroup(p: Player): string {
   return m ? m[1] : "";
 }
 
-/** Greedy bipartite match: assign each player to most-constrained slot. */
+/**
+ * Maximum bipartite matching (Kuhn's augmenting-path algorithm).
+ *
+ * Greedy slot-filling can leave a slot empty even when a perfect assignment
+ * exists. This finds the maximum matching, so a full 8-slot NBA lineup is
+ * produced whenever the selected players can fill it. Returns a per-slot
+ * player index, or null for any slot that cannot be filled.
+ */
 export function bipartiteAssign(players: Player[], slots: RosterSlot[]): (number | null)[] {
-  const out: (number | null)[] = new Array(slots.length).fill(null);
-  const used = new Set<number>();
-  // Sort slots by constraint (specific positions first, UTIL last).
-  const priority = slots
-    .map((s, idx) => ({ s, idx }))
-    .sort((a, b) => (a.s.accepts === null ? 1 : 0) - (b.s.accepts === null ? 1 : 0));
-
-  for (const { idx: slotIdx, s: slot } of priority) {
-    let bestPlayer = -1;
-    let bestScore = -Infinity;
-    for (let i = 0; i < players.length; i++) {
-      if (used.has(i)) continue;
+  const n = players.length;
+  const adjacency: number[][] = slots.map((slot) => {
+    const list: number[] = [];
+    for (let i = 0; i < n; i++) {
       if (players[i].isExcluded) continue;
-      if (!canAccept(slot, players[i].rosterPositions ?? [])) continue;
-      const score = effectiveProjection(players[i]);
-      if (score > bestScore) {
-        bestScore = score;
-        bestPlayer = i;
+      if (canAccept(slot, players[i].rosterPositions ?? [])) list.push(i);
+    }
+    // Prefer higher-projection players when there's a choice.
+    list.sort((a, b) => effectiveProjection(players[b]) - effectiveProjection(players[a]));
+    return list;
+  });
+
+  const playerToSlot: number[] = new Array(n).fill(-1);
+  const slotToPlayer: number[] = new Array(slots.length).fill(-1);
+
+  const tryAugment = (slotIdx: number, visited: boolean[]): boolean => {
+    for (const p of adjacency[slotIdx]) {
+      if (visited[p]) continue;
+      visited[p] = true;
+      const occupant = playerToSlot[p];
+      if (occupant === -1 || tryAugment(occupant, visited)) {
+        playerToSlot[p] = slotIdx;
+        slotToPlayer[slotIdx] = p;
+        return true;
       }
     }
-    if (bestPlayer >= 0) {
-      out[slotIdx] = bestPlayer;
-      used.add(bestPlayer);
-    }
+    return false;
+  };
+
+  // Most-constrained slots first improves the odds of a perfect matching.
+  const order = slots
+    .map((_, idx) => idx)
+    .sort((a, b) => (slots[a].accepts === null ? 1 : 0) - (slots[b].accepts === null ? 1 : 0));
+
+  for (const slotIdx of order) {
+    tryAugment(slotIdx, new Array(n).fill(false));
   }
-  return out;
+
+  return slotToPlayer.map((v) => (v === -1 ? null : v));
 }
 
 /** NBA team-stacking constraint. */
