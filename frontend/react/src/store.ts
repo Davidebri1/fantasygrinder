@@ -62,6 +62,7 @@ interface AppState {
   // Last optimization result
   lastResult: Lineup[] | null;
   setLastResult: (lineups: Lineup[] | null) => void;
+  clearLineups: () => void;
 
   // Slate ID per sport — what the customer is currently looking at
   activeSlateIdBySport: Record<string, string | undefined>;
@@ -115,6 +116,7 @@ export const useAppStore = create<AppState>()(
 
       lastResult: null,
       setLastResult: (lineups) => set({ lastResult: lineups }),
+      clearLineups: () => set({ lastResult: null }),
 
       activeSlateIdBySport: {},
       setActiveSlateId: (sport, slateId) =>

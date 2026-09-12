@@ -5,12 +5,14 @@ import { SportSelectionScreen } from "@/pages/SportSelectionScreen";
 import { NbaHomeScreen } from "@/pages/NbaHomeScreen";
 import { MmaHomeScreen } from "@/pages/MmaHomeScreen";
 import { GolfHomeScreen } from "@/pages/GolfHomeScreen";
+import { BrowseScreen } from "@/pages/BrowseScreen";
 
 const titles: Record<string, string> = {
   "/": "Sport Selection",
   "/nba": "NBA Optimizer",
   "/mma": "MMA Optimizer",
   "/golf": "Golf Optimizer",
+  "/browse": "Browse",
 };
 
 export default function App() {
@@ -25,6 +27,7 @@ export default function App() {
           <Route path="/nba" element={<NbaHomeScreen />} />
           <Route path="/mma" element={<MmaHomeScreen />} />
           <Route path="/golf" element={<GolfHomeScreen />} />
+          <Route path="/browse" element={<BrowseScreen />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

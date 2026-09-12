@@ -12,6 +12,7 @@ const SECTIONS: Section[] = [
   { label: "NBA", href: "/nba", sport: "nba" },
   { label: "MMA", href: "/mma", sport: "mma" },
   { label: "Golf", href: "/golf", sport: "golf" },
+  { label: "Browse", href: "/browse" },
 ];
 
 interface Props {

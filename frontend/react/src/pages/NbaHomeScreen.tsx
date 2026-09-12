@@ -8,7 +8,7 @@
  * `@/optimizer`. No server, no Python, no install.
  */
 import { useEffect, useMemo, useState } from "react";
-import { Activity, Download, Upload } from "lucide-react";
+import { Activity, Download, Trash2, Upload } from "lucide-react";
 
 import { Card } from "@/components/Card";
 import { EspnSyncPanel } from "@/components/EspnSyncPanel";
@@ -30,15 +30,6 @@ export function NbaHomeScreen() {
   const [tab, setTab] = useState<Tab>("pool");
   const [running, setRunning] = useState(false);
   const [lastMs, setLastMs] = useState<number | null>(null);
-  const [telemetry, setTelemetry] = useState<{
-    requested: number;
-    solves: number;
-    uniqueFound: number;
-    duplicatesDropped: number;
-    infeasibleSolves: number;
-    shortBy: number;
-  } | null>(null);
-  const [warnings, setWarnings] = useState<string[]>([]);
 
   const players = useAppStore((s) => s.players["nba"]);
   const loadSample = useAppStore((s) => s.loadSample);
@@ -46,6 +37,7 @@ export function NbaHomeScreen() {
   const updateSettings = useAppStore((s) => s.updateNbaSettings);
   const lastResult = useAppStore((s) => s.lastResult);
   const setLastResult = useAppStore((s) => s.setLastResult);
+  const clearLineups = useAppStore((s) => s.clearLineups);
 
   // Auto-load sample data on first mount if the store is empty.
   useEffect(() => {
@@ -124,8 +116,6 @@ export function NbaHomeScreen() {
         })),
       );
       setLastMs(result.elapsedMs);
-      setTelemetry(result.telemetry ?? null);
-      setWarnings(result.warnings ?? []);
       setRunning(false);
       setTab("results");
     }, 30);
@@ -180,6 +170,13 @@ export function NbaHomeScreen() {
                 <Download className="w-4 h-4" />
                 Excel
               </button>
+              <button
+                onClick={clearLineups}
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-300 hover:border-accent-danger hover:text-accent-danger bg-white text-ink rounded-md text-sm"
+              >
+                <Trash2 className="w-4 h-4" />
+                Clear
+              </button>
             </>
           )}
         </div>
@@ -198,43 +195,8 @@ export function NbaHomeScreen() {
             <Card className="mt-4 p-4">
               <div className="flex items-center gap-2 text-xs text-ink-muted">
                 <Activity className="w-4 h-4 text-accent" />
-                Last run · {lastMs}ms · browser solver
+                Last run · {lastMs}ms
               </div>
-              {telemetry && (
-                <dl className="mt-2 text-[11px] text-ink-subtle grid grid-cols-2 gap-x-3 gap-y-0.5 tabular-nums">
-                  <div className="flex justify-between">
-                    <dt>requested</dt>
-                    <dd>{telemetry.requested}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt>solves</dt>
-                    <dd>{telemetry.solves}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt>unique found</dt>
-                    <dd>{telemetry.uniqueFound}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt>duplicates dropped</dt>
-                    <dd>{telemetry.duplicatesDropped}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt>infeasible</dt>
-                    <dd>{telemetry.infeasibleSolves}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt>short by</dt>
-                    <dd>{telemetry.shortBy}</dd>
-                  </div>
-                </dl>
-              )}
-              {warnings.length > 0 && (
-                <ul className="mt-2 text-[11px] text-accent-warning space-y-0.5 list-disc list-inside">
-                  {warnings.map((w, i) => (
-                    <li key={i}>{w}</li>
-                  ))}
-                </ul>
-              )}
             </Card>
           )}
         </div>
