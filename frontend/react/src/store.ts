@@ -126,16 +126,16 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "fantasy-grinder-app",
-      version: 2,
+      version: 3,
       partialize: (s) => ({
         players: s.players,
         nbaSettings: s.nbaSettings,
         activeSlateIdBySport: s.activeSlateIdBySport,
       }),
-      // v1 → v2: player records now carry headshots; drop persisted v1
-      // rosters so every visitor regenerates them from the new sample.
+      // v2 → v3: MCC/Golf fields expanded (32 fighters, 32 golfers); drop
+      // persisted rosters so every visitor regenerates the new pools.
       migrate: (persisted: unknown, version: number) => {
-        if (version < 2) {
+        if (version < 3) {
           return {
             players: { nba: [], mma: [], golf: [] },
             nbaSettings: {

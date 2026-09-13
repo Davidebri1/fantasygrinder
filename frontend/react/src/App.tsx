@@ -2,9 +2,7 @@ import { Link, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import { GlobalSiteAppBar } from "@/components/GlobalSiteAppBar";
 
 import { SportSelectionScreen } from "@/pages/SportSelectionScreen";
-import { NbaHomeScreen } from "@/pages/NbaHomeScreen";
-import { MmaHomeScreen } from "@/pages/MmaHomeScreen";
-import { GolfHomeScreen } from "@/pages/GolfHomeScreen";
+import { SportOptimizerScreen } from "@/pages/SportOptimizerScreen";
 import { BrowseScreen } from "@/pages/BrowseScreen";
 
 const titles: Record<string, string> = {
@@ -24,9 +22,9 @@ export default function App() {
       <main className="max-w-7xl mx-auto px-6 py-6">
         <Routes>
           <Route path="/" element={<SportSelectionScreen />} />
-          <Route path="/nba" element={<NbaHomeScreen />} />
-          <Route path="/mma" element={<MmaHomeScreen />} />
-          <Route path="/golf" element={<GolfHomeScreen />} />
+          <Route path="/nba" element={<SportOptimizerScreen sport="nba" />} />
+          <Route path="/mma" element={<SportOptimizerScreen sport="mma" />} />
+          <Route path="/golf" element={<SportOptimizerScreen sport="golf" />} />
           <Route path="/browse" element={<BrowseScreen />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

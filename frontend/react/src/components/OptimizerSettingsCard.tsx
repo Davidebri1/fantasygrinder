@@ -1,29 +1,55 @@
 /**
- * Optimizer settings card.
+ * Optimizer settings card — shared by every sport.
  *
- * Structure: pick an OBJECTIVE (what "best" means — deterministic fact),
- * then optionally enable SIMULATION (adds variance-aware sampling).
- * These are separate controls because they are different kinds of things:
- * an objective produces facts; a simulation produces samples.
+ * Renders the common controls (objective, simulation, unique lineups,
+ * solver, lineups, cap, min projection) plus the sport-specific ones
+ * (NBA: contest type / bring-back / correlations; MMA: allow opponents /
+ * card correlation).
  */
 import { PlayCircle } from "lucide-react";
 
 import {
-  NbaSettings,
-  ObjectiveFunction,
   OBJECTIVES,
+  ObjectiveFunction,
   SIMULATION_MODES,
   SimulationMode,
-  strategyFromParts,
   type Strategy,
+  strategyFromParts,
 } from "@/types";
 import { cn } from "@/lib/utils";
 
-interface Props {
-  settings: NbaSettings;
-  onChange: (patch: Partial<NbaSettings>) => void;
-  onRun: () => void;
-  running: boolean;
+export interface OptimizerUiSettings {
+  strategy: Strategy;
+  salary_cap: number;
+  num_lineups: number;
+  min_projection: number;
+  simulation_count: number;
+  unique_lineups: boolean;
+  solver: "branchBound" | "simplex";
+  contest_type: "classic" | "showdown";
+  teammate_correlation: number;
+  opponent_correlation: number;
+  enable_bring_back: boolean;
+  allow_opponents: boolean;
+  card_correlation: number;
+}
+
+export function defaultUiSettings(sport: "nba" | "mma" | "golf"): OptimizerUiSettings {
+  return {
+    strategy: "maxProjection",
+    salary_cap: 50_000,
+    num_lineups: 20,
+    min_projection: 0,
+    simulation_count: 1_000,
+    unique_lineups: true,
+    solver: "branchBound",
+    contest_type: "classic",
+    teammate_correlation: 0.35,
+    opponent_correlation: sport === "mma" ? -0.4 : 0.2,
+    enable_bring_back: false,
+    allow_opponents: false,
+    card_correlation: 0.1,
+  };
 }
 
 /** Reverse-map a legacy Strategy value into (objective, simulationMode). */
@@ -33,29 +59,28 @@ function partsFromStrategy(s: Strategy): { objective: ObjectiveFunction; sim: Si
   return { objective: s, sim: "off" };
 }
 
-export function OptimizerSettingsCard({ settings, onChange, onRun, running }: Props) {
+interface Props {
+  sport: "nba" | "mma" | "golf";
+  settings: OptimizerUiSettings;
+  onChange: (patch: Partial<OptimizerUiSettings>) => void;
+  onRun: () => void;
+  running: boolean;
+}
+
+export function OptimizerSettingsCard({ sport, settings, onChange, onRun, running }: Props) {
   const { objective, sim } = partsFromStrategy(settings.strategy);
   const simulationOn = sim !== "off";
-
-  const setObjective = (o: ObjectiveFunction) => {
-    onChange({ strategy: strategyFromParts(o, sim) });
-  };
-  const setSim = (m: SimulationMode) => {
-    onChange({ strategy: strategyFromParts(objective, m) });
-  };
 
   return (
     <div className="bg-white border border-slate-200 rounded-md shadow-soft">
       <div className="px-4 py-3 border-b border-slate-200">
         <h3 className="text-base font-semibold tracking-tight">Optimizer Settings</h3>
         <p className="text-xs text-ink-subtle mt-0.5">
-          Pick what "best" means (objective), then optionally add variance
-          sampling (simulation).
+          Pick what "best" means (objective), then optionally add variance sampling.
         </p>
       </div>
 
       <div className="px-4 py-4 space-y-4">
-        {/* ── Objective ─────────────────────────────────────────────── */}
         <Field label="Objective (deterministic)">
           <div className="space-y-1.5">
             {OBJECTIVES.map((o) => (
@@ -63,30 +88,25 @@ export function OptimizerSettingsCard({ settings, onChange, onRun, running }: Pr
                 key={o.value}
                 className={cn(
                   "flex items-start gap-2 border rounded-md px-3 py-2 cursor-pointer transition-colors",
-                  objective === o.value
-                    ? "border-brand bg-brand/5"
-                    : "border-slate-200 hover:border-slate-300",
+                  objective === o.value ? "border-brand bg-brand/5" : "border-slate-200 hover:border-slate-300",
                 )}
               >
                 <input
                   type="radio"
                   name="objective"
                   checked={objective === o.value}
-                  onChange={() => setObjective(o.value)}
+                  onChange={() => onChange({ strategy: strategyFromParts(o.value, sim) })}
                   className="mt-0.5 accent-[#2c5282]"
                 />
                 <span className="min-w-0">
                   <span className="block text-sm font-medium text-ink">{o.label}</span>
-                  <span className="block text-[11px] text-ink-subtle leading-snug">
-                    {o.description}
-                  </span>
+                  <span className="block text-[11px] text-ink-subtle leading-snug">{o.description}</span>
                 </span>
               </label>
             ))}
           </div>
         </Field>
 
-        {/* ── Simulation ────────────────────────────────────────────── */}
         <Field label="Simulation (optional variance sampling)">
           <div className="space-y-1.5">
             {SIMULATION_MODES.map((m) => (
@@ -94,23 +114,19 @@ export function OptimizerSettingsCard({ settings, onChange, onRun, running }: Pr
                 key={m.value}
                 className={cn(
                   "flex items-start gap-2 border rounded-md px-3 py-2 cursor-pointer transition-colors",
-                  sim === m.value
-                    ? "border-brand bg-brand/5"
-                    : "border-slate-200 hover:border-slate-300",
+                  sim === m.value ? "border-brand bg-brand/5" : "border-slate-200 hover:border-slate-300",
                 )}
               >
                 <input
                   type="radio"
                   name="simulation"
                   checked={sim === m.value}
-                  onChange={() => setSim(m.value)}
+                  onChange={() => onChange({ strategy: strategyFromParts(objective, m.value) })}
                   className="mt-0.5 accent-[#2c5282]"
                 />
                 <span className="min-w-0">
                   <span className="block text-sm font-medium text-ink">{m.label}</span>
-                  <span className="block text-[11px] text-ink-subtle leading-snug">
-                    {m.description}
-                  </span>
+                  <span className="block text-[11px] text-ink-subtle leading-snug">{m.description}</span>
                 </span>
               </label>
             ))}
@@ -118,10 +134,7 @@ export function OptimizerSettingsCard({ settings, onChange, onRun, running }: Pr
         </Field>
 
         {simulationOn && (
-          <Field
-            label="Simulations"
-            hint="1k is fast; 10k is the GPP sweet spot."
-          >
+          <Field label="Simulations" hint="1k is fast; 10k is the GPP sweet spot.">
             <NumberInput
               value={settings.simulation_count}
               min={100}
@@ -131,7 +144,7 @@ export function OptimizerSettingsCard({ settings, onChange, onRun, running }: Pr
           </Field>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
+        {sport === "nba" && (
           <Field label="Contest type">
             <select
               className="border border-slate-300 rounded-md w-full px-2 py-1.5 text-sm bg-white"
@@ -142,35 +155,20 @@ export function OptimizerSettingsCard({ settings, onChange, onRun, running }: Pr
               <option value="showdown">Showdown ($50k)</option>
             </select>
           </Field>
+        )}
+
+        <div className="grid grid-cols-2 gap-3">
           <Field label="Lineups">
-            <NumberInput
-              value={settings.num_lineups}
-              min={1}
-              max={500}
-              onChange={(v) => onChange({ num_lineups: v })}
-            />
+            <NumberInput value={settings.num_lineups} min={1} max={500} onChange={(v) => onChange({ num_lineups: v })} />
+          </Field>
+          <Field label="Salary cap">
+            <NumberInput value={settings.salary_cap} min={1000} step={500} onChange={(v) => onChange({ salary_cap: v })} />
           </Field>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Salary cap">
-            <NumberInput
-              value={settings.salary_cap}
-              min={1000}
-              step={500}
-              onChange={(v) => onChange({ salary_cap: v })}
-            />
-          </Field>
-          <Field label="Min projection">
-            <NumberInput
-              value={settings.min_projection}
-              min={0}
-              step={0.5}
-              decimal
-              onChange={(v) => onChange({ min_projection: v })}
-            />
-          </Field>
-        </div>
+        <Field label="Min projection">
+          <NumberInput value={settings.min_projection} min={0} step={0.5} decimal onChange={(v) => onChange({ min_projection: v })} />
+        </Field>
 
         <label className="flex items-start gap-2 text-sm border border-slate-200 rounded-md px-3 py-2">
           <input
@@ -182,9 +180,7 @@ export function OptimizerSettingsCard({ settings, onChange, onRun, running }: Pr
           <span className="min-w-0">
             <span className="block font-medium text-ink">Unique lineups</span>
             <span className="block text-[11px] text-ink-subtle leading-snug">
-              On: N distinct lineups (the N best different combinations) for
-              multi-entry tournaments. Off: the single optimal lineup repeated
-              N times.
+              On: N distinct lineups (the N best different combinations). Off: the single optimal lineup repeated N times.
             </span>
           </span>
         </label>
@@ -199,12 +195,10 @@ export function OptimizerSettingsCard({ settings, onChange, onRun, running }: Pr
                 key={val}
                 type="button"
                 onClick={() => onChange({ solver: val })}
-                className={
-                  "text-left border rounded-md px-3 py-2 transition-colors " +
-                  (settings.solver === val
-                    ? "border-brand bg-brand/5"
-                    : "border-slate-200 hover:border-slate-300")
-                }
+                className={cn(
+                  "text-left border rounded-md px-3 py-2 transition-colors",
+                  settings.solver === val ? "border-brand bg-brand/5" : "border-slate-200 hover:border-slate-300",
+                )}
               >
                 <span className="block text-sm font-medium text-ink">{title}</span>
                 <span className="block text-[11px] text-ink-subtle leading-snug">{desc}</span>
@@ -214,51 +208,50 @@ export function OptimizerSettingsCard({ settings, onChange, onRun, running }: Pr
         </Field>
 
         <details className="border border-slate-200 rounded-md">
-          <summary className="px-3 py-2 cursor-pointer text-sm font-medium text-ink select-none">
-            Advanced
-          </summary>
+          <summary className="px-3 py-2 cursor-pointer text-sm font-medium text-ink select-none">Advanced</summary>
           <div className="px-3 py-3 space-y-3 border-t border-slate-200">
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Teammate corr.">
-                <NumberInput
-                  value={settings.teammate_correlation}
-                  min={0}
-                  step={0.05}
-                  max={1}
-                  decimal
-                  onChange={(v) => onChange({ teammate_correlation: v })}
-                />
-              </Field>
-              <Field label="Opponent corr.">
-                <NumberInput
-                  value={settings.opponent_correlation}
-                  min={-1}
-                  step={0.05}
-                  max={1}
-                  decimal
-                  onChange={(v) => onChange({ opponent_correlation: v })}
-                />
-              </Field>
-            </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={settings.enable_bring_back}
-                onChange={(e) => onChange({ enable_bring_back: e.target.checked })}
-                className="rounded border-slate-300 text-brand focus:ring-brand"
-              />
-              <span>Bring-back (opponent from same game required)</span>
-            </label>
-            <Field label="Excluded teams (comma-separated)">
-              <input
-                className="border border-slate-300 rounded-md w-full px-2 py-1.5 text-sm"
-                value={settings.excluded_teams.join(",")}
-                placeholder="e.g. LAL, BOS"
-                onChange={(e) =>
-                  onChange({ excluded_teams: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) })
-                }
-              />
-            </Field>
+            {sport === "nba" && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Teammate corr.">
+                    <NumberInput value={settings.teammate_correlation} min={0} max={1} step={0.05} decimal onChange={(v) => onChange({ teammate_correlation: v })} />
+                  </Field>
+                  <Field label="Opponent corr.">
+                    <NumberInput value={settings.opponent_correlation} min={-1} max={1} step={0.05} decimal onChange={(v) => onChange({ opponent_correlation: v })} />
+                  </Field>
+                </div>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={settings.enable_bring_back}
+                    onChange={(e) => onChange({ enable_bring_back: e.target.checked })}
+                    className="rounded border-slate-300 text-brand focus:ring-brand"
+                  />
+                  <span>Bring-back (opponent from same game required)</span>
+                </label>
+              </>
+            )}
+            {sport === "mma" && (
+              <>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={settings.allow_opponents}
+                    onChange={(e) => onChange({ allow_opponents: e.target.checked })}
+                    className="rounded border-slate-300 text-brand focus:ring-brand"
+                  />
+                  <span>Allow both fighters from same bout</span>
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Opponent corr.">
+                    <NumberInput value={settings.opponent_correlation} min={-1} max={1} step={0.05} decimal onChange={(v) => onChange({ opponent_correlation: v })} />
+                  </Field>
+                  <Field label="Card corr.">
+                    <NumberInput value={settings.card_correlation} min={0} max={1} step={0.05} decimal onChange={(v) => onChange({ card_correlation: v })} />
+                  </Field>
+                </div>
+              </>
+            )}
           </div>
         </details>
 
@@ -279,15 +272,7 @@ export function OptimizerSettingsCard({ settings, onChange, onRun, running }: Pr
   );
 }
 
-function Field({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <label className="block">
       <div className="text-xs font-medium text-ink-muted mb-1">{label}</div>
