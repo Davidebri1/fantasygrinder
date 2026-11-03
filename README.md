@@ -2,6 +2,27 @@
 
 A DFS lineup optimizer for **NBA, MMA, and Golf** with **player headshots**, **smart recommendations**, and a **full database backend** (ESPN sync, Odds API, audit log). The backend is mandatory, not optional.
 
+## Where this lives
+
+| | |
+|---|---|
+| **Live site** | <https://fantasygrinder.surge.sh/> (Surge, built from `frontend/react`) |
+| **Repository** | `github.com/Davidebri1/fantasy-grinder` — this repo, home of the app |
+| **Frontend** | `frontend/react` — Vite + React 18 + TypeScript + Tailwind |
+| **Backend** | `backend/django` — Django + Postgres (ESPN sync, Odds API, audit log) |
+| **Optimizer** | `frontend/react/src/optimizer` — in-browser MILP/simplex solver, portfolio + stacks |
+
+```bash
+cd frontend/react
+npm install
+npm run dev      # local dev server
+npm run build    # -> dist/ (this is what gets published)
+npm test         # vitest, includes stacks + portfolio suites
+```
+
+The published Surge build predates the tip commit of this repo, which carries the
+glass visual rebuild and the real stacking/exposure engine.
+
 ## Architecture — what the product actually is
 
 The product is **Django + Postgres + React**. One service for deployment (Render Blueprint provisions web service + database). The in-browser optimizer is a fallback demo mode, not the product.

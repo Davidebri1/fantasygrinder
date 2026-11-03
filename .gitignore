@@ -16,3 +16,5 @@ db.sqlite3
 .coverage.*
 htmlcov/
 .DS_Store
+*.tsbuildinfo
+preview.err
