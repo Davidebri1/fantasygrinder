@@ -6,10 +6,10 @@
  * room the rest of the app lives in, with the headline set on a plane of its
  * own in front of it.
  *
- * The four sport cards float at three different heights and hang over the
- * bottom of the photograph, so they sit in front of the room rather than
- * inside it. They are glass like everything else, so the light behind them
- * comes through.
+ * The four sport cards hang over the bottom of the photograph together, on one
+ * line, so the row reads as a single band of glass in front of the room rather
+ * than as boxes dropped at different heights. They are glass like everything
+ * else, so the light behind them comes through.
  *
  * If the photograph fails to load the grade still carries the panel, so the
  * page never breaks.
@@ -28,45 +28,37 @@ interface HeroSport {
 }
 
 /**
- * The four sports, each on its own plane. `depth` decides how far a card
- * sits forward: 0 is nearest the viewer, 2 is furthest back.
+ * The four sports, each on its own plane. The one the hero's primary action
+ * points at is marked `featured` — it earns a quiet brand tint, not a
+ * different height. Position is for reading, not for emphasis.
  */
-const SPORTS: (HeroSport & { depth: 0 | 1 | 2 })[] = [
+const SPORTS: (HeroSport & { featured?: boolean })[] = [
   {
     title: "NFL Optimizer",
     description: "Quarterback, running back, receiver, tight end, flex and defense.",
     to: "/nfl",
     icon: <NflLogo size={44} />,
-    depth: 0,
+    featured: true,
   },
   {
     title: "NBA Optimizer",
     description: "Classic and Showdown, with position assignment and team limits.",
     to: "/nba",
     icon: <NbaLogo size={44} />,
-    depth: 1,
   },
   {
     title: "MMA Optimizer",
     description: "Six-fighter cards, one fighter per bout, card correlation applied.",
     to: "/mma",
     icon: <UfcLogo size={44} />,
-    depth: 2,
   },
   {
     title: "Golf Optimizer",
     description: "Tournament fields with tee times, cut projections and salary tuning.",
     to: "/golf",
     icon: <GolfLogo size={44} />,
-    depth: 1,
   },
 ];
-
-const DEPTH_STYLE: Record<0 | 1 | 2, React.CSSProperties> = {
-  0: { transform: "translate3d(0, -16px, 0)", zIndex: 3 },
-  1: { transform: "translate3d(0, 10px, 0)", zIndex: 2 },
-  2: { transform: "translate3d(0, 34px, 0)", zIndex: 1 },
-};
 
 export function HeroPanel() {
   const [photoOk, setPhotoOk] = useState(true);
@@ -156,25 +148,35 @@ export function HeroPanel() {
         </div>
       </div>
 
-      {/* ── The cards, floating at three heights ─────────────────────
-          They hang over the bottom of the photograph and in front of the
-          room, which is what makes them read as objects rather than as
-          boxes inside a panel. */}
-      <div className="relative -mt-14 px-6 pb-12 md:px-12 md:pb-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
+      {/* ── The cards, one band in front of the photograph ───────────
+          They hang over the bottom edge of the photograph together, on a
+          single line, so the row reads as one object in front of the room
+          rather than as boxes dropped at different heights. */}
+      <div className="relative -mt-16 px-6 pb-12 md:px-12 md:pb-16">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-5">
           {SPORTS.map((s) => (
             <Link
               key={s.title}
               to={s.to}
-              className="group relative rounded-3 border border-line bg-surface-1 backdrop-blur-2xl transition-[transform,border-color,background-color] duration-200 hover:-translate-y-1 hover:border-line-strong hover:bg-surface-3"
-              style={{
-                ...DEPTH_STYLE[s.depth],
-                boxShadow: s.depth === 0 ? "var(--shadow-3)" : "var(--shadow-2)",
-              }}
+              className={[
+                "group relative flex h-full flex-col rounded-3 border bg-surface-1 backdrop-blur-2xl",
+                "transition-[transform,border-color,background-color] duration-200",
+                "hover:-translate-y-1 hover:border-line-strong hover:bg-surface-3",
+                s.featured
+                  ? "border-brand/40 shadow-3"
+                  : "border-line shadow-3",
+              ].join(" ")}
             >
-              <div className="p-5">
-                <div className="w-11 h-11 rounded-2 grid place-items-center bg-white/6 border border-line">
-                  {s.icon}
+              <div className="flex flex-1 flex-col p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="w-11 h-11 rounded-2 grid place-items-center bg-white/6 border border-line">
+                    {s.icon}
+                  </div>
+                  {s.featured && (
+                    <span className="shrink-0 rounded-full border border-brand/30 bg-brand-wash px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-brand">
+                      Start here
+                    </span>
+                  )}
                 </div>
                 <h2 className="mt-4 font-condensed text-xl font-semibold text-ink tracking-tight">
                   {s.title}
@@ -182,7 +184,7 @@ export function HeroPanel() {
                 <p className="mt-1.5 text-sm text-ink-muted leading-relaxed">
                   {s.description}
                 </p>
-                <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-brand transition-[gap] duration-200 group-hover:gap-2.5">
+                <span className="mt-auto pt-5 inline-flex items-center gap-1.5 text-sm font-medium text-brand transition-[gap] duration-200 group-hover:gap-2.5">
                   Open
                   <ArrowRight className="w-3.5 h-3.5" />
                 </span>
