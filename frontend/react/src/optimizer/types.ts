@@ -23,7 +23,7 @@
 // ─────────────────────────────────────────────────────────────────────
 // Public types
 // ─────────────────────────────────────────────────────────────────────
-export type Sport = "nba" | "mma" | "golf";
+export type Sport = "nba" | "nfl" | "mma" | "golf";
 export type ContestType = "classic" | "showdown";
 export type SolverBackend = "pulp" | "ortools" | "browser";
 export type Strategy =
@@ -54,8 +54,28 @@ export interface Player {
   isLiked?: boolean;
   injuryStatus?: string | null;
   stddev?: number | null;
+  /** Jersey number, straight off the roster feed. */
+  jersey?: string | null;
   /** Direct headshot URL — when set, no lookup is needed. */
   photoUrl?: string | null;
+}
+
+/**
+ * A rule that shapes which players are allowed together in one lineup.
+ *
+ * This is the stacking primitive: "at least two from this team", "at most
+ * one from this game". RotoWire calls the same idea a stack, and it is the
+ * single biggest lever a tournament player has over a portfolio.
+ */
+export interface StackRule {
+  /** What the rule counts players from. */
+  scope: "team" | "game";
+  /** The team's abbreviation, or the game's correlation key. */
+  id: string;
+  /** Fewest players from this group the lineup must contain. */
+  min: number;
+  /** Most players from this group the lineup may contain. */
+  max: number;
 }
 
 export interface OptimizerSettings {
@@ -86,6 +106,13 @@ export interface OptimizerSettings {
   cardCorrelation?: number;
   allowOpponents?: boolean;
   globalMaxPlayersPerTeam?: number;
+  globalMinPlayersPerTeam?: number;
+  /**
+   * Stacking rules the lineup must satisfy. Enforced inside the build, and
+   * relaxed with a visible warning rather than silently truncating the
+   * count.
+   */
+  stackRules?: StackRule[];
   enableBringBack?: boolean;
 }
 

@@ -63,8 +63,38 @@ export function UfcLogo({ size = 48 }: { size?: number }) {
   );
 }
 
-export function GolfLogo({ size = 48 }: { size?: number }) {
+export function NflLogo({ size = 48 }: { size?: number }) {
   return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 100 100"
+      role="img"
+      aria-label="NFL"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect width="100" height="100" rx="12" fill="#013369" />
+      <rect x="0" y="0" width="100" height="14" fill="#d50a0a" />
+      <text
+        x="50"
+        y="63"
+        textAnchor="middle"
+        fontFamily="Barlow Condensed, Arial, sans-serif"
+        fontSize="38"
+        fontWeight="700"
+        fill="#ffffff"
+        letterSpacing="1"
+      >
+        NFL
+      </text>
+      <ellipse cx="50" cy="82" rx="15" ry="8" fill="#b7332c" />
+      <ellipse cx="50" cy="82" rx="15" ry="8" fill="none" stroke="#ffffff" strokeWidth="1.4" />
+      <path d="M50 74 L50 90" stroke="#ffffff" strokeWidth="1.4" />
+    </svg>
+  );
+}
+
+export function GolfLogo({ size = 48 }: { size?: number }) {  return (
     <svg
       width={size}
       height={size}

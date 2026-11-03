@@ -15,7 +15,7 @@ import { useEffect, useState } from "react";
 interface Props {
   playerId: string;
   name: string;
-  sport: "nba" | "mma" | "golf";
+  sport: "nba" | "nfl" | "mma" | "golf";
   /** Optional direct URL — when present, no lookup is needed. */
   photoUrl?: string | null;
   size?: number;

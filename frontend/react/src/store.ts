@@ -14,8 +14,16 @@ import {
   type NbaSettings,
   DEFAULT_NBA_SETTINGS,
   type Player,
+  type Sport,
 } from "@/types";
-import { buildGolfSample, buildMmaSample, buildNbaSample, sampleHeadshotCache } from "@/optimizer/sample";
+import { fetchLivePool, type LiveGame } from "@/lib/espn-live";
+import {
+  buildGolfSample,
+  buildMmaSample,
+  buildNbaSample,
+  buildNflSample,
+  sampleHeadshotCache,
+} from "@/optimizer/sample";
 import { seedHeadshotCache, prefetchHeadshots } from "@/components/PlayerAvatar";
 import type { Player as EnginePlayer } from "@/optimizer";
 
@@ -42,8 +50,11 @@ function toWire(p: EnginePlayer): Player {
     is_liked: p.isLiked,
     injury_status: p.injuryStatus ?? null,
     photo_url: p.photoUrl ?? null,
+    jersey: p.jersey ?? null,
   };
 }
+
+export type LiveStatus = "idle" | "loading" | "live" | "empty" | "offline";
 
 interface AppState {
   // Working set
@@ -51,9 +62,18 @@ interface AppState {
   setPlayers: (sport: string, players: Player[]) => void;
   updatePlayer: (sport: string, playerId: string, patch: Partial<Player>) => void;
   bulkResetPlayers: (sport: string) => void;
-  loadSample: (sport: "nba" | "mma" | "golf") => void;
+  loadSample: (sport: "nba" | "nfl" | "mma" | "golf") => void;
   /** Resolve ESPN headshots for the current roster in the background. */
   prefetchRosterPhotos: (sport: string) => void;
+
+  // Live feed state
+  /** "idle" | "loading" | "live" | "empty" | "offline" per sport. */
+  liveStatus: Record<string, LiveStatus>;
+  liveGames: Record<string, LiveGame[]>;
+  liveWarnings: Record<string, string[]>;
+  lastSyncedAt: Record<string, string | null>;
+  /** Pull the live slate from ESPN and swap it into the pool. */
+  loadLive: (sport: Sport) => Promise<void>;
 
   // Settings per sport
   nbaSettings: NbaSettings;
@@ -72,7 +92,7 @@ interface AppState {
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
-      players: { nba: [], mma: [], golf: [] },
+      players: { nba: [], nfl: [], mma: [], golf: [] },
       setPlayers: (sport, players) =>
         set((s) => ({ players: { ...s.players, [sport]: players } })),
       updatePlayer: (sport, playerId, patch) =>
@@ -93,6 +113,9 @@ export const useAppStore = create<AppState>()(
           const roster = buildNbaSample().map(toWire);
           set((s) => ({ players: { ...s.players, nba: roster } }));
           void prefetchHeadshots(roster.map((p) => p.name));
+        } else if (sport === "nfl") {
+          const roster = buildNflSample().map(toWire);
+          set((s) => ({ players: { ...s.players, nfl: roster } }));
         } else if (sport === "mma") {
           const roster = buildMmaSample().map(toWire);
           set((s) => ({ players: { ...s.players, mma: roster } }));
@@ -108,6 +131,59 @@ export const useAppStore = create<AppState>()(
       prefetchRosterPhotos: (sport) => {
         const roster = get().players[sport] ?? [];
         void prefetchHeadshots(roster.map((p) => p.name));
+      },
+
+      liveStatus: {},
+      liveGames: {},
+      liveWarnings: {},
+      lastSyncedAt: {},
+
+      /**
+       * Pull the live slate from ESPN and swap it into the pool.
+       *
+       * The pool is replaced wholesale so projections and salaries always
+       * match the live feed, but the user's own decisions (locks, excludes,
+       * likes, hand-edited projections) are carried across.
+       */
+      loadLive: async (sport) => {
+        set((s) => ({ liveStatus: { ...s.liveStatus, [sport]: "loading" } }));
+        try {
+          const pool = await fetchLivePool(sport);
+          const previous = get().players[sport] ?? [];
+          const priorById = new Map(previous.map((p) => [p.id, p]));
+          const merged = pool.players.map((p) => {
+            const prior = priorById.get(p.id);
+            if (!prior) return p;
+            return {
+              ...p,
+              is_locked: prior.is_locked,
+              is_excluded: prior.is_excluded,
+              is_liked: prior.is_liked,
+              user_projection: prior.user_projection ?? p.user_projection ?? null,
+            };
+          });
+          set((s) => ({
+            players: { ...s.players, [sport]: merged },
+            liveStatus: {
+              ...s.liveStatus,
+              [sport]: merged.length > 0 ? "live" : "empty",
+            },
+            liveGames: { ...s.liveGames, [sport]: pool.games },
+            liveWarnings: { ...s.liveWarnings, [sport]: pool.warnings },
+            lastSyncedAt: { ...s.lastSyncedAt, [sport]: pool.fetchedAt },
+          }));
+        } catch (err) {
+          // Live feed unreachable — keep whatever the user has and say so.
+          const message =
+            err instanceof Error ? err.message : "The live feed could not be reached.";
+          set((s) => ({
+            liveStatus: { ...s.liveStatus, [sport]: "offline" },
+            liveWarnings: { ...s.liveWarnings, [sport]: [message] },
+          }));
+          if ((get().players[sport] ?? []).length === 0) {
+            get().loadSample(sport);
+          }
+        }
       },
 
       nbaSettings: DEFAULT_NBA_SETTINGS,
@@ -126,7 +202,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "fantasy-grinder-app",
-      version: 3,
+      version: 4,
       partialize: (s) => ({
         players: s.players,
         nbaSettings: s.nbaSettings,
@@ -134,10 +210,12 @@ export const useAppStore = create<AppState>()(
       }),
       // v2 → v3: MCC/Golf fields expanded (32 fighters, 32 golfers); drop
       // persisted rosters so every visitor regenerates the new pools.
+      // v3 → v4: NFL added; drop persisted rosters again so the live slate
+      // is always the source of truth.
       migrate: (persisted: unknown, version: number) => {
-        if (version < 3) {
+        if (version < 4) {
           return {
-            players: { nba: [], mma: [], golf: [] },
+            players: { nba: [], nfl: [], mma: [], golf: [] },
             nbaSettings: {
               ...DEFAULT_NBA_SETTINGS,
             },

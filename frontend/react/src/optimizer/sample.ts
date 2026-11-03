@@ -257,3 +257,118 @@ export function sampleHeadshotCache(): Record<string, string> {
   for (const [name, url] of Object.entries(GOLF_HEADSHOT_URLS)) entries[name.toLowerCase()] = url;
   return entries;
 }
+
+// ───────────────────────────────────────────────────────────────────────────
+// NFL
+// ───────────────────────────────────────────────────────────────────────────
+
+const NFL_GAMES: Array<[string, string, Array<[string, string]>]> = [
+  [
+    "BUF",
+    "BAL",
+    [
+      ["Josh Allen", "QB"],
+      ["James Cook III", "RB"],
+      ["Ray Davis", "RB"],
+      ["Keon Coleman", "WR"],
+      ["Skyler Bell", "WR"],
+      ["Gabe Evans", "TE"],
+      ["Khalil Mack", "WR"],
+    ],
+  ],
+  [
+    "PHI",
+    "WAS",
+    [
+      ["Jalen Hurts", "QB"],
+      ["Saquon Barkley", "RB"],
+      ["Jahan Dotson", "WR"],
+      ["Zach Eze", "TE"],
+      ["DeVonta Smith", "WR"],
+      ["Antonio Manziri", "WR"],
+    ],
+  ],
+  [
+    "DET",
+    "MIN",
+    [
+      ["Jared Goff", "QB"],
+      ["Amon-Ra St. Brown", "WR"],
+      ["Jahmyr Gibbs", "RB"],
+      ["David Montgomery", "RB"],
+      ["Sam LaPorta", "TE"],
+      ["Brandon Powell", "WR"],
+    ],
+  ],
+];
+
+/**
+ * Offline NFL slate — used only when the live feed cannot be reached.
+ * The live pool is the real source; this keeps the app usable rather than
+ * empty when ESPN is unreachable.
+ */
+export function buildNflSample(): Player[] {
+  const rand = rng(PROJECTIONS_SEED + 7);
+  const out: Player[] = [];
+  const salaryByPos: Record<string, number> = {
+    QB: 7200,
+    RB: 5400,
+    WR: 4800,
+    TE: 3600,
+  };
+  const baseByPos: Record<string, number> = {
+    QB: 22,
+    RB: 16,
+    WR: 14,
+    TE: 10,
+  };
+
+  NFL_GAMES.forEach(([away, home, players], gameIdx) => {
+    const gameKey = `${away}@${home}`;
+    players.forEach(([name, pos], i) => {
+      const projection = Math.round(baseByPos[pos] + rand() * baseByPos[pos] * 1.6);
+      const salary = Math.min(
+        9_500,
+        Math.max(2_800, Math.round(((salaryByPos[pos] + (rand() - 0.5) * 1_800) / 100) * 100)),
+      );
+      out.push({
+        id: `nfl-sample-${gameIdx}-${i}`,
+        name,
+        sport: "nfl",
+        salary,
+        projection,
+        team: i % 2 === 0 ? away : home,
+        opponent: i % 2 === 0 ? home : away,
+        gameInfo: `${gameKey} 1:00pm ET`,
+        positions: [pos],
+        rosterPositions: pos === "RB" ? ["RB", "FLEX"] : pos === "WR" ? ["WR", "FLEX"] : pos === "TE" ? ["TE", "FLEX"] : ["QB"],
+        correlationGroup: gameKey,
+        projectedOwnership: Math.round(2 + rand() * 33),
+        photoUrl: null,
+      });
+    });
+    // One DST unit per side.
+    (["away", "home"] as const).forEach((side, k) => {
+      const team = side === "away" ? away : home;
+      const opponent = side === "away" ? home : away;
+      const projection = Math.round(4 + rand() * 6);
+      out.push({
+        id: `nfl-sample-dst-${gameIdx}-${k}`,
+        name: `${team} Defense`,
+        sport: "nfl",
+        salary: Math.round((2_000 + rand() * 2_000) / 100) * 100,
+        projection,
+        team,
+        opponent,
+        gameInfo: `${gameKey} 1:00pm ET`,
+        positions: ["DST"],
+        rosterPositions: ["DST"],
+        correlationGroup: gameKey,
+        projectedOwnership: Math.round(5 + rand() * 20),
+        photoUrl: null,
+      });
+    });
+  });
+
+  return out;
+}

@@ -37,22 +37,31 @@ interface Ctx {
   nodes: number;
   nodeCap: number;
   deadline: number;
+  /** Best score available for the slot at each depth (ignoring reuse). */
+  slotMaxScore: number[];
+  /** Cheapest player available for the slot at each depth (ignoring reuse). */
+  slotMinSalary: number[];
+  /** Sum of the cheapest fill for the slots after `depth`. */
+  minFillCost: number[];
 }
+
+/** How many candidates per slot the search keeps. See solveNbaClassic. */
+const CANDIDATE_LIMIT = 30;
 
 function keyOf(indices: number[]): string {
   return [...indices].sort((a, b) => a - b).join("|");
 }
 
-function bound(ctx: Ctx, used: boolean[], score: number, remaining: number): number {
-  if (remaining <= 0) return score;
-  // Optimistic: add the highest remaining scores regardless of position.
-  const rest: number[] = [];
-  for (let i = 0; i < ctx.players.length; i++) {
-    if (!used[i]) rest.push(ctx.scores[i]);
-  }
-  rest.sort((a, b) => b - a);
+/**
+ * Upper bound on the score still reachable from `depth` onwards.
+ *
+ * Uses the best score each *specific* slot could still contribute rather
+ * than the best scores in the pool, which is what makes the search prune
+ * hard enough to run on a full live slate.
+ */
+function bound(ctx: Ctx, depth: number, score: number): number {
   let b = score;
-  for (let k = 0; k < remaining && k < rest.length; k++) b += rest[k];
+  for (let d = depth; d < ctx.order.length; d++) b += ctx.slotMaxScore[d];
   return b;
 }
 
@@ -77,7 +86,9 @@ function dfs(
   }
 
   // Prune branches that cannot beat the incumbent.
-  if (bound(ctx, used, score, ctx.order.length - depth) <= ctx.bestScore) return;
+  if (bound(ctx, depth, score) <= ctx.bestScore) return;
+  // Prune branches that cannot afford to fill the remaining slots.
+  if (salary + ctx.minFillCost[depth] > ctx.cap) return;
 
   const slotIdx = ctx.order[depth];
   const slot: RosterSlot = NBA_CLASSIC_SLOTS[slotIdx];
@@ -135,13 +146,38 @@ export function solveNbaClassic(opts: {
       if (slot.accepts === null || slot.accepts.some((p) => rp.includes(p))) list.push(i);
     }
     list.sort((a, b) => scores[b] - scores[a]);
-    return list;
+
+    // Candidate pooling. On a full live slate the pool holds ~240 players,
+    // and 240^8 combinations is not searchable in a browser. The best legal
+    // lineup is always built from the strongest players available for each
+    // slot, so we keep the top CANDIDATE_LIMIT per slot (plus any locked
+    // player, who must stay reachable).
+    const capped =
+      list.length > CANDIDATE_LIMIT ? list.slice(0, CANDIDATE_LIMIT) : list.slice();
+    for (const l of lockedIdx) {
+      if (!capped.includes(l) && list.includes(l)) capped.push(l);
+    }
+    return capped;
   });
 
   // If any slot has no eligible player, no legal lineup exists.
   if (eligibility.some((e) => e.length === 0)) return null;
 
   // Seed the incumbent with a greedy legal fill so the bound prunes early.
+  const slotMaxScore = order.map((_, depth) => {
+    const list = eligibility[depth];
+    return list.length > 0 ? scores[list[0]] : 0;
+  });
+  const slotMinSalary = order.map((_, depth) => {
+    const list = eligibility[depth];
+    if (list.length === 0) return Number.POSITIVE_INFINITY;
+    return Math.min(...list.map((i) => players[i].salary));
+  });
+  const minFillCost = new Array(order.length + 1).fill(0);
+  for (let depth = order.length - 1; depth >= 0; depth--) {
+    minFillCost[depth] = minFillCost[depth + 1] + slotMinSalary[depth];
+  }
+
   const ctx: Ctx = {
     players,
     scores,
@@ -154,6 +190,9 @@ export function solveNbaClassic(opts: {
     nodes: 0,
     nodeCap,
     deadline: performance.now() + timeLimitMs,
+    slotMaxScore,
+    slotMinSalary,
+    minFillCost,
   };
   greedySeed(ctx);
 

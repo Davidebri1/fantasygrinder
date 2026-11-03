@@ -6,7 +6,7 @@
  * changes, this file changes too.
  */
 
-export type Sport = "nba" | "mma" | "golf";
+export type Sport = "nba" | "nfl" | "mma" | "golf";
 export type ContestType = "classic" | "showdown";
 export type SolverBackend = "pulp" | "ortools";
 
@@ -112,6 +112,8 @@ export interface Player {
   injury_severity?: string | null;
   /** Direct headshot URL — travels with the player everywhere. */
   photo_url?: string | null;
+  /** Jersey number, straight off the roster feed. */
+  jersey?: string | null;
 }
 
 export interface Slate {

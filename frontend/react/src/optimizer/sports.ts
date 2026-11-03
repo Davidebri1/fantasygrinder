@@ -15,6 +15,8 @@ export interface RosterSlot {
   label: string;
   /** null = accepts any position. */
   accepts: string[] | null;
+  /** Score multiplier for this slot (Showdown CPT = 1.5). */
+  multiplier?: number;
 }
 
 export const NBA_CLASSIC_SLOTS: RosterSlot[] = [
@@ -29,13 +31,60 @@ export const NBA_CLASSIC_SLOTS: RosterSlot[] = [
 ];
 
 export const NBA_SHOWDOWN_SLOTS: RosterSlot[] = [
-  { label: "CPT", accepts: null },
+  { label: "CPT", accepts: null, multiplier: 1.5 },
   { label: "FLEX", accepts: null },
   { label: "FLEX", accepts: null },
   { label: "FLEX", accepts: null },
   { label: "FLEX", accepts: null },
   { label: "FLEX", accepts: null },
 ];
+
+/**
+ * DraftKings-style NFL classic roster: 1 QB, 2 RB, 3 WR, 1 TE, 1 FLEX
+ * (RB/WR/TE) and 1 DST. The slot labels double as the exposure buckets the
+ * optimizer reports on, so a portfolio can be read position by position.
+ */
+export const NFL_CLASSIC_SLOTS: RosterSlot[] = [
+  { label: "QB", accepts: ["QB"] },
+  { label: "RB", accepts: ["RB"] },
+  { label: "RB", accepts: ["RB"] },
+  { label: "WR", accepts: ["WR"] },
+  { label: "WR", accepts: ["WR"] },
+  { label: "WR", accepts: ["WR"] },
+  { label: "TE", accepts: ["TE"] },
+  { label: "FLEX", accepts: ["RB", "WR", "TE"] },
+  { label: "DST", accepts: ["DST"] },
+];
+
+export const NFL_ROSTER_SIZE = NFL_CLASSIC_SLOTS.length;
+
+/** Human titles for the exposure buckets, one per distinct slot label. */
+export function slotBuckets(slots: RosterSlot[]): { slot: string; title: string }[] {
+  const title: Record<string, string> = {
+    QB: "Quarterback Slot",
+    RB: "Running Back Slot",
+    WR: "Wide Receiver Slot",
+    TE: "Tight End Slot",
+    FLEX: "Flex Slot",
+    DST: "Defense / Special Teams",
+    PG: "Point Guard Slot",
+    SG: "Shooting Guard Slot",
+    SF: "Small Forward Slot",
+    PF: "Power Forward Slot",
+    C: "Center Slot",
+    G: "Guard Slot",
+    UTIL: "Utility Slot",
+    CPT: "Captain",
+  };
+  const seen = new Set<string>();
+  const out: { slot: string; title: string }[] = [];
+  for (const s of slots) {
+    if (seen.has(s.label)) continue;
+    seen.add(s.label);
+    out.push({ slot: s.label, title: title[s.label] ?? `${s.label} Slot` });
+  }
+  return out;
+}
 
 function canAccept(slot: RosterSlot, playerPositions: string[]): boolean {
   if (slot.accepts === null) return true;
@@ -260,4 +309,61 @@ export function buildGolfLineup(
   rank: number,
 ): Lineup {
   return buildMmaLineup(selectedIdx, players, strategy, solverBackend, rank);
+}
+
+/**
+ * Build a lineup from an explicit slot → player assignment.
+ *
+ * The portfolio builder already knows which player sits in which slot, so
+ * the lineup is assembled directly rather than re-derived by a bipartite
+ * matching pass.
+ */
+export function buildSlotLineup(
+  picks: number[],
+  slots: RosterSlot[],
+  players: Player[],
+  strategy: string,
+  solverBackend: string,
+  rank: number,
+): Lineup {
+  const assignments: SlotAssignment[] = picks.map((playerIdx, slotIdx) => ({
+    slot: slots[slotIdx].label,
+    scoreMultiplier: slots[slotIdx].multiplier ?? 1.0,
+    playerId: players[playerIdx].id,
+    playerName: players[playerIdx].name,
+  }));
+  const totalSalary = picks.reduce((s, i) => s + players[i].salary, 0);
+  const totalProjection = picks.reduce(
+    (s, i, k) => s + effectiveProjection(players[i]) * (slots[k].multiplier ?? 1.0),
+    0,
+  );
+  const totalCeiling = picks.reduce(
+    (s, i, k) =>
+      s +
+      (players[i].projection + 1.5 * effectiveStddevOf(players[i])) *
+        (slots[k].multiplier ?? 1.0),
+    0,
+  );
+  const teams = Array.from(
+    new Set(picks.map((i) => players[i].team).filter((t) => !!t) as string[]),
+  );
+  const games = Array.from(
+    new Set(
+      picks
+        .map((i) => effectiveCorrelationGroup(players[i]))
+        .filter((g) => !!g) as string[],
+    ),
+  );
+  return {
+    assignments,
+    strategy: strategy as Lineup["strategy"],
+    solverBackend: solverBackend as Lineup["solverBackend"],
+    rank,
+    totalSalary,
+    totalProjection,
+    totalCeiling,
+    teams,
+    games,
+    uniqueKey: [...picks].sort((a, b) => a - b).join("|"),
+  };
 }

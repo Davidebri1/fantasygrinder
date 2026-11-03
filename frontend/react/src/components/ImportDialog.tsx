@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useImportCsv, useImportExcel } from "@/lib/queries";
-import { Player, type Sport } from "@/types";
+import { importCsvFile, importExcelFile } from "@/lib/import-client";
+import { type Sport } from "@/types";
 import { useAppStore } from "@/store";
 
 interface Props {
@@ -11,58 +11,57 @@ interface Props {
 
 export function ImportDialog({ sport, open, onClose }: Props) {
   const [tab, setTab] = useState<"csv" | "excel">("csv");
-  const importCsv = useImportCsv();
-  const importExcel = useImportExcel();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [count, setCount] = useState<number | null>(null);
   const setPlayers = useAppStore((s) => s.setPlayers);
 
   if (!open) return null;
 
   const handleFile = async (file: File) => {
-    const mut = tab === "csv" ? importCsv : importExcel;
-    const result = await new Promise<{ unwrap: () => Promise<{ players: Player[] }> }>(
-      // The mutation hook's API: `mutateAsync`-style is invoked via the wrapper below.
-      (resolve, reject) => {
-        try {
-          (async () => {
-            const data = await mut.mutateAsync({ sport, file });
-            resolve({ unwrap: async () => data });
-          })();
-        } catch (e) {
-          reject(e);
-        }
-      },
-    );
-    const data = await result.unwrap();
-    setPlayers(sport, data.players);
-    onClose();
+    setBusy(true);
+    setError(null);
+    setCount(null);
+    try {
+      const players =
+        tab === "csv" ? await importCsvFile(file, sport) : await importExcelFile(file, sport);
+      setPlayers(sport, players);
+      setCount(players.length);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "That file could not be read.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40">
-      <div className="bg-white rounded-lg shadow-2xl w-[520px] max-w-[90vw] p-6">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-chrome-deep/70">
+      <div className="bg-surface-1 border border-line rounded-3 shadow-3 w-[520px] max-w-[90vw] p-6">
         <div className="flex justify-between items-start mb-4">
           <h2 className="text-lg font-semibold">Import {sport.toUpperCase()} Roster</h2>
-          <button onClick={onClose} className="text-ink-subtle hover:text-ink">×</button>
+          <button onClick={onClose} className="text-ink-subtle hover:text-ink">
+            &times;
+          </button>
         </div>
         <div className="flex gap-2 mb-4">
           {(["csv", "excel"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-3 py-1.5 text-sm rounded-md ${tab === t ? "bg-brand text-white" : "bg-slate-100 text-ink-muted hover:bg-slate-200"}`}
+              className={`px-3 py-1.5 text-sm rounded-2 ${tab === t ? "bg-brand text-white" : "bg-surface-2 text-ink-muted hover:bg-surface-3"}`}
             >
               {t.toUpperCase()}
             </button>
           ))}
         </div>
-        <label className="block border-2 border-dashed border-slate-300 rounded-lg p-8 text-center cursor-pointer hover:border-brand">
+        <label className="block border-2 border-dashed border-line-strong rounded-3 p-8 text-center cursor-pointer hover:border-brand">
           <input
             type="file"
             accept={tab === "csv" ? ".csv,text/csv" : ".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
-              if (f) handleFile(f);
+              if (f) void handleFile(f);
             }}
           />
           <div className="text-ink-muted">
@@ -71,15 +70,17 @@ export function ImportDialog({ sport, open, onClose }: Props) {
           <div className="text-xs text-ink-subtle mt-2">
             Supported columns: Name, Position, Salary, Game Info, …
           </div>
+          <div className="text-xs text-ink-subtle mt-1">
+            Parsed in your browser — nothing is uploaded anywhere.
+          </div>
         </label>
-        {(importCsv.isPending || importExcel.isPending) && (
-          <div className="mt-3 text-sm text-ink-muted">Uploading…</div>
-        )}
-        {(importCsv.isError || importExcel.isError) && (
-          <div className="mt-3 text-sm text-accent-danger">
-            Import failed. Check file format and try again.
+        {busy && <div className="mt-3 text-sm text-ink-muted">Reading file…</div>}
+        {count !== null && (
+          <div className="mt-3 text-sm text-good">
+            Loaded {count} players. This replaces the live pool until the next refresh.
           </div>
         )}
+        {error && <div className="mt-3 text-sm text-danger">{error}</div>}
       </div>
     </div>
   );

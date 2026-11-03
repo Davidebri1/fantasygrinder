@@ -63,7 +63,8 @@ function scoreLineup(lineup: Lineup, contest: ContestProfile, allLineups: Lineup
     avgOverlap += shared / Math.max(myPlayers.size, 1);
   }
   avgOverlap /= Math.max(allLineups.length - 1, 1);
-  const diversity = 1 - avgOverlap / 8;
+  // Roster size drives how much overlap is possible — 8 for NBA, 9 for NFL.
+  const diversity = 1 - avgOverlap / Math.max(myPlayers.size, 1);
   return lineup.total_projection * (1 + diversity);
 }
 
@@ -103,13 +104,21 @@ export function recommendPicks(
   return scored.slice(0, safeMax);
 }
 
-export function buildContestPresets(sport: "nba" | "mma" | "golf"): ContestProfile[] {
+export function buildContestPresets(sport: "nba" | "nfl" | "mma" | "golf"): ContestProfile[] {
   if (sport === "nba") {
     return [
       { type: "gpp", entryFee: 3, fieldSize: 1000, prizePool: 2500, bankroll: 30 },
       { type: "gpp", entryFee: 20, fieldSize: 500, prizePool: 9000, bankroll: 100 },
       { type: "cash", entryFee: 5, fieldSize: 100, prizePool: 475, bankroll: 50 },
       { type: "single", entryFee: 5, fieldSize: 100, prizePool: 475, bankroll: 10 },
+    ];
+  }
+  if (sport === "nfl") {
+    return [
+      { type: "gpp", entryFee: 5, fieldSize: 1000, prizePool: 5000, bankroll: 50 },
+      { type: "gpp", entryFee: 20, fieldSize: 500, prizePool: 10000, bankroll: 100 },
+      { type: "cash", entryFee: 10, fieldSize: 100, prizePool: 950, bankroll: 50 },
+      { type: "single", entryFee: 10, fieldSize: 100, prizePool: 950, bankroll: 10 },
     ];
   }
   if (sport === "mma") {

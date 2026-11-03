@@ -13,11 +13,11 @@ import { useMemo, useState } from "react";
 
 import { Card } from "./Card";
 import { buildContestPresets, recommendPicks, type ContestProfile } from "@/recommend";
-import type { Lineup } from "@/types";
+import type { Lineup, Sport } from "@/types";
 import { fmtDecimal, fmtMoney } from "@/lib/utils";
 
 interface Props {
-  sport: "nba" | "mma" | "golf";
+  sport: Sport;
   lineups: Lineup[];
 }
 
@@ -69,13 +69,13 @@ export function RecommendationsPanel({ sport, lineups }: Props) {
                 setMaxEntries(Math.max(1, Math.min(p.bankroll / p.entryFee, 3)));
               }}
               className={
-                "text-left border rounded-md px-3 py-2 text-xs " +
+                "text-left border rounded-2 px-3 py-2 text-xs " +
                 (isActive
-                  ? "border-brand bg-brand/5 text-ink"
-                  : "border-slate-200 hover:border-slate-300 text-ink-muted")
+                  ? "border-brand bg-brand-wash text-ink"
+                  : "border-line hover:border-line-strong text-ink-muted")
               }
             >
-              <div className="font-semibold uppercase text-[10px] tracking-wide">
+              <div className="label font-medium text-ink">
                 {p.type === "gpp" ? "GPP" : p.type === "cash" ? "Cash" : "Single"}
               </div>
               <div className="text-sm text-ink font-medium">
@@ -100,7 +100,7 @@ export function RecommendationsPanel({ sport, lineups }: Props) {
             onChange={(e) =>
               setActive({ ...active, entryFee: Math.max(0, Number(e.target.value) || 0) })
             }
-            className="w-full border border-slate-300 rounded px-2 py-1.5 bg-white"
+            className="w-full bg-inset text-ink border border-line rounded-1 px-2 py-1.5 focus:border-brand"
           />
         </label>
         <label className="block">
@@ -112,7 +112,7 @@ export function RecommendationsPanel({ sport, lineups }: Props) {
             onChange={(e) =>
               setActive({ ...active, fieldSize: Math.max(1, Number(e.target.value) || 1) })
             }
-            className="w-full border border-slate-300 rounded px-2 py-1.5 bg-white"
+            className="w-full bg-inset text-ink border border-line rounded-1 px-2 py-1.5 focus:border-brand"
           />
         </label>
         <label className="block">
@@ -124,7 +124,7 @@ export function RecommendationsPanel({ sport, lineups }: Props) {
             onChange={(e) =>
               setActive({ ...active, bankroll: Math.max(0, Number(e.target.value) || 0) })
             }
-            className="w-full border border-slate-300 rounded px-2 py-1.5 bg-white"
+            className="w-full bg-inset text-ink border border-line rounded-1 px-2 py-1.5 focus:border-brand"
           />
         </label>
       </div>
@@ -140,15 +140,15 @@ export function RecommendationsPanel({ sport, lineups }: Props) {
             onChange={(e) =>
               setMaxEntries(Math.max(1, Math.min(lineups.length, Number(e.target.value) || 1)))
             }
-            className="w-20 border border-slate-300 rounded px-2 py-1.5 bg-white"
+            className="w-20 bg-inset text-ink border border-line rounded-1 px-2 py-1.5 focus:border-brand"
           />
         </label>
         <span
           className={
-            "px-2 py-1 rounded text-xs font-medium " +
+            "px-2 py-1 rounded-1 text-xs font-medium " +
             (affordable
-              ? "bg-accent/10 text-accent"
-              : "bg-accent-danger/10 text-accent-danger")
+              ? "bg-good-wash text-good"
+              : "bg-danger-wash text-danger")
           }
         >
           Total: {fmtMoney(totalCost)}{" "}
@@ -172,7 +172,7 @@ export function RecommendationsPanel({ sport, lineups }: Props) {
           picks.map((p, idx) => (
             <div
               key={p.lineup.unique_key}
-              className="flex items-center gap-3 border border-slate-200 rounded-md bg-slate-50 px-3 py-2"
+              className="flex items-center gap-3 border border-line rounded-2 bg-surface-2 px-3 py-2"
             >
               <span className="text-xs text-ink-subtle font-mono w-6">
                 {idx + 1}
@@ -186,7 +186,7 @@ export function RecommendationsPanel({ sport, lineups }: Props) {
                   salary · {fmtDecimal(p.lineup.total_projection)} proj ·{" "}
                   <span
                     className={
-                      p.estimatedRoi > 0 ? "text-accent" : "text-accent-danger"
+                      p.estimatedRoi > 0 ? "text-good" : "text-danger"
                     }
                   >
                     {(p.estimatedRoi * 100).toFixed(0)}% est. ROI

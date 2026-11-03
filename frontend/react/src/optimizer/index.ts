@@ -6,19 +6,26 @@
  * Flow:
  *   1. Filter eligible (excluded / zero salary / below min projection).
  *   2. Build correlation matrix + run Monte Carlo (if applicable).
- *   3. Iterate the strategy plan, solve each via MILP, dedupe lineups.
- *   4. Sort by totalProjection desc, assign ranks, return top-K.
+ *   3. Build the portfolio — N distinct, legal lineups ranked by score.
+ *   4. Report what was produced, and what could not be.
+ *
+ * The portfolio builder (see `portfolio.ts`) is what guarantees the caller
+ * gets the number of lineups they asked for. The previous implementation
+ * re-solved the MILP with each found lineup forbidden inside an 8-second
+ * wall-clock budget, so asking for 150 lineups silently returned a handful.
  */
 
-import { solveMilp, type MilpSpec } from "./milp";
 import {
   buildGolfLineup,
   buildMmaLineup,
-  buildNbaLineup,
+  buildSlotLineup,
   GOLF_ROSTER_SIZE,
   mmaRosterSize,
   MMA_ROSTER_SIZE,
   NBA_CLASSIC_SLOTS,
+  NBA_SHOWDOWN_SLOTS,
+  NFL_CLASSIC_SLOTS,
+  type RosterSlot,
 } from "./sports";
 import {
   effectiveProjection,
@@ -27,7 +34,7 @@ import {
 } from "./simulate";
 import { buildStrategyPlan } from "./strategies";
 import { lpRelaxation } from "./lp";
-import { solveNbaClassic } from "./nba_classic";
+import { buildPortfolio, type PortfolioSlot } from "./portfolio";
 import type {
   Lineup,
   OptimizeResult,
@@ -35,11 +42,20 @@ import type {
   Player,
   SlotAssignment,
   Sport,
+  StackRule,
 } from "./types";
 
-const SPORT_ROSTER: Record<Sport, (settings: OptimizerSettings) => number> = {
-  nba: (s) => (s.contestType === "showdown" ? 6 : 8),
-  mma: (s) => mmaRosterSize(s.allowOpponents ?? false, countDistinctBouts([])),
+const SPORT_ROSTER: Record<
+  Sport,
+  (settings: OptimizerSettings, eligible: Player[]) => number
+> = {
+  nba: (s) => (s.contestType === "showdown" ? NBA_SHOWDOWN_SLOTS.length : NBA_CLASSIC_SLOTS.length),
+  nfl: () => NFL_CLASSIC_SLOTS.length,
+  // An MMA card is six fighters, but you can only take one fighter from a
+  // bout — so the roster can only be as big as the number of bouts on the
+  // card. This has to be counted from the players actually on the slate.
+  mma: (s, eligible) =>
+    mmaRosterSize(s.allowOpponents ?? false, countDistinctBouts(eligible)),
   golf: () => GOLF_ROSTER_SIZE,
 };
 
@@ -63,6 +79,58 @@ function filterEligible(players: Player[], settings: OptimizerSettings): Player[
   return out;
 }
 
+/** The roster slots a given sport/contest uses. */
+export function slotsForSport(settings: OptimizerSettings): RosterSlot[] {
+  if (settings.sport === "nba") {
+    return (settings.contestType ?? "classic") === "showdown"
+      ? NBA_SHOWDOWN_SLOTS
+      : NBA_CLASSIC_SLOTS;
+  }
+  if (settings.sport === "nfl") return NFL_CLASSIC_SLOTS;
+  return [];
+}
+
+/**
+ * The stacking rules a run has to satisfy.
+ *
+ * The legacy global team controls are translated into explicit per-team
+ * rules, so the portfolio builder only ever has to understand one kind of
+ * rule. The teams come from the eligible pool — a team with no eligible
+ * player cannot be stacked and must not become an impossible rule.
+ */
+function stackRulesFor(settings: OptimizerSettings, eligible: Player[]): StackRule[] {
+  const rules: StackRule[] = [...(settings.stackRules ?? [])];
+  const teamCounts = new Map<string, number>();
+  for (const p of eligible) {
+    const team = (p.team ?? "").trim();
+    if (!team) continue;
+    teamCounts.set(team, (teamCounts.get(team) ?? 0) + 1);
+  }
+  const minPerTeam = settings.globalMinPlayersPerTeam ?? 0;
+  const maxPerTeam = settings.globalMaxPlayersPerTeam ?? 0;
+  if (minPerTeam > 0) {
+    for (const [team, count] of teamCounts) {
+      rules.push({ scope: "team", id: team, min: minPerTeam, max: count });
+    }
+  }
+  if (maxPerTeam > 0) {
+    for (const team of teamCounts.keys()) {
+      rules.push({ scope: "team", id: team, min: 0, max: maxPerTeam });
+    }
+  }
+  return rules;
+}
+
+/** Sports whose roster is position-constrained (NFL/NBA) vs flat (MMA/Golf). */
+function isPositionConstrained(sport: Sport): boolean {
+  return sport === "nba" || sport === "nfl";
+}
+
+/** A single FLEX slot repeated — used by MMA and Golf. */
+function flexSlots(size: number): RosterSlot[] {
+  return Array.from({ length: size }, () => ({ label: "FLEX", accepts: null }));
+}
+
 export function runOptimize(
   settings: OptimizerSettings,
   players: Player[],
@@ -70,7 +138,7 @@ export function runOptimize(
   const started = performance.now();
   const warnings: string[] = [];
   const eligible = filterEligible(players, settings);
-  const rosterSize = SPORT_ROSTER[settings.sport](settings);
+  const rosterSize = SPORT_ROSTER[settings.sport](settings, eligible);
   if (eligible.length < rosterSize) {
     return {
       lineups: [],
@@ -97,133 +165,136 @@ export function runOptimize(
     });
   }
 
-  // 3. Strategy plan
+  // 3. Objective scores for this run.
   const plan = buildStrategyPlan(settings.strategy, eligible, settings, simulatedRows);
-  const collected: Lineup[] = [];
-  const forbidden: Set<number>[] = [];
-  const forbiddenKeys = new Set<string>();
-  const wantUnique = settings.uniqueLineups !== false;
+  const scores = plan[0]?.scores ?? eligible.map((p) => effectiveProjection(p));
 
   const lockedIdx = new Set<number>();
-  const excludedIdx = new Set<number>();
   for (let i = 0; i < eligible.length; i++) {
     if (eligible[i].isLocked) lockedIdx.add(i);
-    if (eligible[i].isExcluded) excludedIdx.add(i);
   }
-  const isNbaClassic =
-    settings.sport === "nba" && (settings.contestType ?? "classic") === "classic";
+  const excludedIdx = new Set<number>();
 
-  let solves = 0;
-  let duplicatesDropped = 0;
-  let infeasibleSolves = 0;
+  const slots: RosterSlot[] = isPositionConstrained(settings.sport)
+    ? slotsForSport(settings)
+    : flexSlots(rosterSize);
 
-  for (const strat of plan) {
-    solves += 1;
+  /*
+   * On an MMA card you cannot take both fighters from the same bout — that
+   * lineup is illegal in every contest. Unless the user has asked to allow
+   * it, a lineup that does it is skipped rather than counted.
+   */
+  const isLegal =
+    settings.sport === "mma" && !(settings.allowOpponents ?? false)
+      ? (picks: number[]) => {
+          const seenBouts = new Set<string>();
+          for (const i of picks) {
+            const bout = eligible[i]?.bout;
+            if (!bout) continue;
+            if (seenBouts.has(bout)) return false;
+            seenBouts.add(bout);
+          }
+          return true;
+        }
+      : undefined;
 
-    // NBA Classic: position-aware solve — every result is a legal 8-slot lineup.
-    if (isNbaClassic) {
-      const res = solveNbaClassic({
-        players: eligible,
-        scores: strat.scores,
-        salaryCap: settings.salaryCap,
-        lockedIdx,
-        excludedIdx,
-        forbiddenKeys,
-      });
-      if (!res) {
-        infeasibleSolves += 1;
-        continue;
-      }
-      const lineup = buildClassicLineup(res.assignments, eligible, settings.strategy);
-      if (collected.find((l) => l.uniqueKey === lineup.uniqueKey)) {
-        duplicatesDropped += 1;
-        continue;
-      }
-      collected.push(lineup);
-      forbiddenKeys.add(keyOf(res.assignments.map((a) => a.playerIdx)));
-      if (!wantUnique) break;
-      if (collected.length >= settings.numLineups) break;
-      continue;
+  // 4. Build the portfolio.
+  const stackRules = stackRulesFor(settings, eligible);
+  const portfolio = buildPortfolio({
+    players: eligible,
+    scores,
+    slots: slots as PortfolioSlot[],
+    salaryCap: settings.salaryCap,
+    count: settings.numLineups,
+    lockedIdx,
+    excludedIdx,
+    maxExposurePct: settings.maxExposure ?? 100,
+    seed: settings.seed ?? 42,
+    isLegal,
+    stackRules,
+    // A big portfolio needs real time, but it must never be cut short
+    // silently — the shortfall is reported below if it happens.
+    timeBudgetMs: 20_000,
+    maxExpansions: 200_000,
+  });
+
+  const built: Lineup[] = portfolio.lineups.map((entry, i) => {
+    if (isPositionConstrained(settings.sport)) {
+      return buildSlotLineup(
+        entry.picks,
+        portfolio.slots,
+        eligible,
+        settings.strategy,
+        "browser",
+        i + 1,
+      );
     }
-
-    const spec = buildSpecForSport(eligible, strat.scores, settings, forbidden);
-    if (spec === null) continue;
-    const result = solveMilp(spec);
-    if (result.status !== "Optimal" || result.selectedIdx.length === 0) {
-      infeasibleSolves += 1;
-      continue;
+    if (settings.sport === "mma") {
+      return buildMmaLineup(entry.picks, eligible, settings.strategy, "browser", i + 1);
     }
+    return buildGolfLineup(entry.picks, eligible, settings.strategy, "browser", i + 1);
+  });
 
-    const lineup = buildLineupForSport(
-      result.selectedIdx,
-      eligible,
-      settings,
-      "browser",
-      settings.strategy,
-      0,
+  if (portfolio.stats.droppedSlots > 0) {
+    warnings.push(
+      `${portfolio.stats.droppedSlots} roster slot${portfolio.stats.droppedSlots === 1 ? " has" : "s have"} ` +
+        `no eligible player on this slate, so those slots were left out.`,
     );
-    if (collected.find((l) => l.uniqueKey === lineup.uniqueKey)) {
-      duplicatesDropped += 1;
-      continue;
+  }
+  for (const rule of portfolio.stats.relaxedStackRules) {
+    const what = rule.scope === "team" ? `team ${rule.id}` : `game ${rule.id}`;
+    const label = `min ${rule.min} / max ${rule.max} for ${what}`;
+    if (rule.reason === "impossible") {
+      warnings.push(
+        `Stack rule "${label}" cannot be met on this slate, so it was dropped. ` +
+          `No lineup can hold that many players from ${rule.id}.`,
+      );
+    } else {
+      warnings.push(
+        `Stack rule "${label}" could not be held for every lineup, so it was dropped ` +
+          `to keep the full count of ${settings.numLineups} lineups.`,
+      );
     }
-    collected.push(lineup);
-    forbidden.push(new Set(result.selectedIdx));
-
-    // Non-unique mode: we only need the single optimal lineup, cloned below.
-    if (!wantUnique) break;
-    if (collected.length >= settings.numLineups) break;
+  }
+  if (portfolio.stats.exposureRelaxed) {
+    warnings.push(
+      `A ${settings.maxExposure}% exposure cap could not be held for all ${settings.numLineups} lineups. ` +
+        `The cap was relaxed so you still get the full count — raise the cap in Customize if you would rather ` +
+        `have fewer lineups that respect it.`,
+    );
   }
 
-  // Non-unique mode: return the proven optimum repeated N times (the same
-  // lineup for N contest entries), rather than N distinct combinations.
-  if (!wantUnique && collected.length > 0) {
-    const best = collected[0];
-    const clones: Lineup[] = Array.from({ length: settings.numLineups }, (_, i) => ({
+  // Non-unique mode: the same optimal lineup repeated for N entries.
+  const wantUnique = settings.uniqueLineups !== false;
+  let lineups = built;
+  if (!wantUnique && built.length > 0) {
+    const best = built[0];
+    lineups = Array.from({ length: settings.numLineups }, (_, i) => ({
       ...best,
-      assignments: best.assignments.map((a) => ({ ...a })),
+      assignments: best.assignments.map((a: SlotAssignment) => ({ ...a })),
       rank: i + 1,
     }));
-    return {
-      lineups: clones,
-      strategy: settings.strategy,
-      solverBackend: "browser",
-      elapsedMs: Math.round(performance.now() - started),
-      warnings: [
-        "Unique lineups off — the single optimal lineup was repeated. Turn it on for multi-entry portfolio diversity.",
-      ],
-      telemetry: {
-        requested: settings.numLineups,
-        solves,
-        uniqueFound: 1,
-        duplicatesDropped,
-        infeasibleSolves,
-        shortBy: 0,
-      },
-    };
+    warnings.push(
+      "Unique lineups off — the single optimal lineup was repeated. Turn it on for multi-entry portfolio diversity.",
+    );
   }
 
-  // 4. Sort + rank
-  collected.sort((a, b) => b.totalProjection - a.totalProjection);
-  collected.forEach((l, i) => (l.rank = i + 1));
-  const top = collected.slice(0, settings.numLineups);
-
-  const shortBy = Math.max(0, settings.numLineups - collected.length);
+  const shortBy = Math.max(0, settings.numLineups - lineups.length);
   if (shortBy > 0) {
     warnings.push(
-      `Requested ${settings.numLineups} unique lineups; produced ${collected.length} ` +
-        `(${solves} solves, ${duplicatesDropped} duplicates dropped, ${infeasibleSolves} infeasible). ` +
-        `The pool or constraints don't allow more distinct lineups.`,
+      `Requested ${settings.numLineups} lineups; produced ${lineups.length}. ` +
+        `The pool of ${eligible.length} eligible players does not contain enough distinct legal lineups ` +
+        `under the current salary cap and constraints.`,
     );
   }
 
   // LP relaxation bound — the "simplex" view. Deterministic and identical
   // for both solver modes; reported so the bound is visible.
-  const rosterSizeForLp = SPORT_ROSTER[settings.sport](settings);
   const baseScores = plan[0]?.scores ?? eligible.map((p) => p.projection);
   const lp = lpRelaxation(
     eligible,
     baseScores,
-    rosterSizeForLp,
+    rosterSize,
     settings.salaryCap,
     lockedIdx,
     excludedIdx,
@@ -231,17 +302,17 @@ export function runOptimize(
   const solverName = settings.solver === "simplex" ? "simplex" : "branchBound";
 
   return {
-    lineups: top,
+    lineups,
     strategy: settings.strategy,
     solverBackend: "browser",
     elapsedMs: Math.round(performance.now() - started),
     warnings,
     telemetry: {
       requested: settings.numLineups,
-      solves,
-      uniqueFound: collected.length,
-      duplicatesDropped,
-      infeasibleSolves,
+      solves: portfolio.stats.expansions,
+      uniqueFound: portfolio.stats.produced,
+      duplicatesDropped: portfolio.stats.duplicatesDropped,
+      infeasibleSolves: 0,
       shortBy,
       solver: solverName,
       lpBound: Math.round(lp.bound * 100) / 100,
@@ -249,128 +320,8 @@ export function runOptimize(
   };
 }
 
-/** Stable key for a set of player indices (order-independent). */
-function keyOf(indices: number[]): string {
-  return [...indices].sort((a, b) => a - b).join("|");
-}
-
-/** Build a Lineup from a position-aware NBA Classic assignment. */
-function buildClassicLineup(
-  assignments: { slot: string; playerIdx: number }[],
-  players: Player[],
-  strategy: string,
-): Lineup {
-  const slotAssignments: SlotAssignment[] = assignments.map((a) => ({
-    slot: a.slot,
-    scoreMultiplier: 1.0,
-    playerId: players[a.playerIdx].id,
-    playerName: players[a.playerIdx].name,
-  }));
-  const totalSalary = assignments.reduce((s, a) => s + players[a.playerIdx].salary, 0);
-  const totalProjection = assignments.reduce(
-    (s, a) => s + (players[a.playerIdx].userProjection ?? players[a.playerIdx].projection),
-    0,
-  );
-  const totalCeiling = assignments.reduce((s, a) => s + players[a.playerIdx].projection, 0);
-  const teams = Array.from(
-    new Set(assignments.map((a) => players[a.playerIdx].team).filter((t) => !!t) as string[]),
-  );
-  const games = Array.from(
-    new Set(
-      assignments
-        .map((a) => players[a.playerIdx].correlationGroup ?? "")
-        .filter((g) => !!g),
-    ),
-  );
-  return {
-    assignments: slotAssignments,
-    strategy: strategy as Lineup["strategy"],
-    solverBackend: "browser",
-    rank: 0,
-    totalSalary,
-    totalProjection,
-    totalCeiling,
-    teams,
-    games,
-    uniqueKey: keyOf(assignments.map((a) => a.playerIdx)),
-  };
-}
-
-function buildSpecForSport(
-  eligible: Player[],
-  scores: number[],
-  settings: OptimizerSettings,
-  forbidden: Set<number>[],
-): MilpSpec | null {
-  const locked = new Set<number>();
-  const excluded = new Set<number>();
-  for (let i = 0; i < eligible.length; i++) {
-    if (eligible[i].isLocked) locked.add(i);
-    if (eligible[i].isExcluded) excluded.add(i);
-  }
-
-  const rosterSize = SPORT_ROSTER[settings.sport](settings);
-  const baseSpec: MilpSpec = {
-    scores: scores.slice(),
-    salaries: eligible.map((p) => p.salary),
-    rosterSize,
-    salaryCap: settings.salaryCap,
-    lockedIdx: locked,
-    excludedIdx: excluded,
-    forbiddenSets: forbidden,
-  };
-
-  if (settings.sport === "nba" && settings.contestType === "showdown") {
-    // CPT multiplier: pick the highest-proj player as captain.
-    const cptIdx = scores
-      .map((s, i) => ({ s, i }))
-      .filter((x) => !excluded.has(x.i))
-      .sort((a, b) => b.s - a.s)[0]?.i;
-    if (cptIdx == null) return null;
-    const multipliers = new Array(eligible.length).fill(1.0);
-    multipliers[cptIdx] = 1.5;
-    return {
-      ...baseSpec,
-      scoreMultipliers: multipliers,
-      preAssignments: [[0, cptIdx]],
-    };
-  }
-
-  if (settings.sport === "mma") {
-    const distinctBouts = countDistinctBouts(eligible);
-    const size = mmaRosterSize(settings.allowOpponents ?? false, distinctBouts);
-    return { ...baseSpec, rosterSize: size };
-  }
-
-  return baseSpec;
-}
-
-function buildLineupForSport(
-  selectedIdx: number[],
-  players: Player[],
-  settings: OptimizerSettings,
-  backend: "browser",
-  strategy: string,
-  rank: number,
-): Lineup {
-  if (settings.sport === "nba") {
-    return buildNbaLineup(
-      selectedIdx,
-      players,
-      settings.contestType ?? "classic",
-      strategy,
-      backend,
-      rank,
-    );
-  }
-  if (settings.sport === "mma") {
-    return buildMmaLineup(selectedIdx, players, strategy, backend, rank);
-  }
-  return buildGolfLineup(selectedIdx, players, strategy, backend, rank);
-}
-
 // Re-export for callers
-export { NBA_CLASSIC_SLOTS };
+export { NBA_CLASSIC_SLOTS, NFL_CLASSIC_SLOTS, MMA_ROSTER_SIZE };
 export { effectiveProjection, effectiveStddev } from "./simulate";
 export type {
   Sport,

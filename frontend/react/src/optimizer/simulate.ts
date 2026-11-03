@@ -93,7 +93,7 @@ export function runSimulations(
   players: Player[],
   simCount: number,
   opts: {
-    sport: "nba" | "mma" | "golf";
+    sport: "nba" | "nfl" | "mma" | "golf";
     teammateCorrelation: number;
     opponentCorrelation: number;
     cardCorrelation: number;
@@ -104,7 +104,7 @@ export function runSimulations(
   if (n === 0 || simCount === 0) return [];
 
   let corr: number[][];
-  if (opts.sport === "nba") {
+  if (opts.sport === "nba" || opts.sport === "nfl") {
     corr = buildNbaCorrelation(players, opts.teammateCorrelation, opts.opponentCorrelation);
   } else if (opts.sport === "mma") {
     corr = buildMmaCorrelation(players, opts.opponentCorrelation, opts.cardCorrelation);

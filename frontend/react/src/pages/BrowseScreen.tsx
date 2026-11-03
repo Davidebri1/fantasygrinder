@@ -10,15 +10,16 @@ import { Search } from "lucide-react";
 
 import { Card } from "@/components/Card";
 
-type Sport = "nba" | "mma" | "golf";
+type Sport = "nba" | "nfl" | "mma" | "golf";
 
 const ESPN_PATH: Record<Sport, string> = {
   nba: "basketball/nba",
+  nfl: "football/nfl",
   mma: "mma/ufc",
   golf: "golf/pga",
 };
 
-const LABEL: Record<Sport, string> = { nba: "NBA", mma: "UFC", golf: "PGA" };
+const LABEL: Record<Sport, string> = { nba: "NBA", nfl: "NFL", mma: "UFC", golf: "PGA" };
 
 interface Competitor {
   name: string;
@@ -132,7 +133,7 @@ export function BrowseScreen() {
   };
 
   const subtitle = useMemo(
-    () => ({ nba: "Games & players", mma: "Cards & fighters", golf: "Events & field" })[sport],
+    () => ({ nba: "Games & players", nfl: "Games & players", mma: "Cards & fighters", golf: "Events & field" })[sport],
     [sport],
   );
 
@@ -146,13 +147,13 @@ export function BrowseScreen() {
           </p>
         </div>
         <div className="flex gap-1">
-          {(["nba", "mma", "golf"] as Sport[]).map((s) => (
+          {(["nba", "nfl", "mma", "golf"] as Sport[]).map((s) => (
             <button
               key={s}
               onClick={() => setSport(s)}
               className={
-                "px-3 py-1.5 text-sm rounded-md border " +
-                (sport === s ? "border-brand bg-brand/5 text-ink" : "border-slate-200 text-ink-muted hover:border-slate-300")
+                "px-3 py-1.5 text-sm rounded-2 border " +
+                (sport === s ? "border-brand bg-brand-wash text-ink" : "border-line text-ink-muted hover:border-line-strong")
               }
             >
               {LABEL[s]}
@@ -171,8 +172,8 @@ export function BrowseScreen() {
             ) : (
               <ul className="space-y-2">
                 {scores.map((ev) => (
-                  <li key={ev.id} className="border border-slate-200 rounded-md overflow-hidden">
-                    <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-200">
+                  <li key={ev.id} className="border border-line rounded-2 overflow-hidden">
+                    <div className="flex items-center justify-between px-3 py-2 bg-surface-2 border-b border-line">
                       <span className="text-sm font-medium text-ink truncate">{ev.name}</span>
                       <span className="text-xs text-ink-subtle shrink-0">
                         {ev.status || fmtDate(ev.date)}
@@ -204,13 +205,13 @@ export function BrowseScreen() {
 
         <Card className="p-0" title="Player Search">
           <div className="p-4">
-            <div className="flex items-center gap-2 border border-slate-300 rounded-md px-2 py-1.5 mb-3">
+            <div className="flex items-center gap-2 border border-line rounded-2 bg-inset px-2 py-1.5 mb-3">
               <Search className="w-4 h-4 text-ink-subtle" />
               <input
                 value={query}
                 onChange={(e) => runSearch(e.target.value)}
                 placeholder="Search players…"
-                className="w-full text-sm outline-none bg-transparent"
+                className="w-full text-sm text-ink bg-transparent focus:border-brand"
               />
             </div>
             {searching ? (

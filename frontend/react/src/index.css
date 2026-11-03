@@ -2,29 +2,171 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Fantasy Grinder — a stadium at night, seen through frosted glass.
+ *
+ * The app is a working tool used at night, so the room is dark. The colour
+ * in it is not paint: it is the field-lines photograph blurred until the
+ * yard lines become streaks of light, with three real light sources over it.
+ * Every surface is a sheet of glass on top, so that light comes through.
+ *
+ * Depth comes from four things and nothing else:
+ *   1. material — glass has a blur and a hairline edge, so a panel reads as
+ *      a sheet in front of the light rather than a patch on top of it;
+ *   2. light    — one key from above, one fill from the sport's colour, one
+ *      warm counter, so the page has a direction;
+ *   3. height   — four shadow levels, each with a hairline top highlight;
+ *   4. colour   — spent only on things you can act on or read.
+ *
+ * Every colour, radius and shadow below is a token. Nothing in this app is
+ * written as a literal anywhere else.
+ */
+
 :root {
-  color-scheme: light;
-  font-family: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: dark;
+
+  /* ── Canvas ────────────────────────────────────────────────────────────
+     The dark room. The light in it comes from the backdrop, not from here. */
+  --canvas: #07090e;
+  --canvas-deep: #04060a;
+
+  /* ── Glass ─────────────────────────────────────────────────────────────
+     Four levels of the same white at different densities. A card is 4.5%,
+     a recessed well is darker and cuts inward, a floating sheet is 8.5%. */
+  --surface-1: rgba(255, 255, 255, 0.045);
+  --surface-2: rgba(255, 255, 255, 0.026);
+  --surface-3: rgba(255, 255, 255, 0.075);
+  --surface-4: rgba(255, 255, 255, 0.085);
+
+  /* The inset grey: table heads, tab strips, recessed wells. */
+  --inset: rgba(0, 0, 0, 0.24);
+
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.18);
+
+  /* ── Ink ─────────────────────────────────────────────────────────────── */
+  --ink: #eef2f8;
+  --ink-muted: #9ba7b9;
+  --ink-subtle: #6c7789;
+
+  /* Kept for the chrome, where the app's ink now lives. */
+  --ink-on-dark: #eef2f8;
+  --ink-on-dark-muted: #9ba7b9;
+
+  /* ── Chrome ─────────────────────────────────────────────────────────────
+     The bar is glass, so the light behind it still shows through. */
+  --chrome: rgba(10, 14, 22, 0.66);
+  --chrome-deep: rgba(5, 8, 13, 0.86);
+
+  /* ── Signal ─────────────────────────────────────────────────────────────
+     One bright action, one data colour, three states. Nothing else is
+     allowed to be saturated. */
+  --action: #ffffff;
+  --action-deep: #e2e8f1;
+  --action-wash: rgba(255, 255, 255, 0.1);
+
+  --brand: #4c8dff;
+  --brand-bright: #8fb8ff;
+  --brand-deep: #2f6bd6;
+  --brand-wash: rgba(76, 141, 255, 0.14);
+
+  --good: #3ed598;
+  --good-wash: rgba(62, 213, 152, 0.14);
+  --warn: #f5b942;
+  --warn-wash: rgba(245, 185, 66, 0.14);
+  --danger: #ff6a4d;
+  --danger-wash: rgba(255, 106, 77, 0.14);
+
+  /* The colour of the sport you are in. Set at runtime by the backdrop. */
+  --sport: #4c8dff;
+
+  /* ── Height ─────────────────────────────────────────────────────────────
+     Four levels. Each one is a soft shadow plus a hairline of light along
+     the top edge, the way a real sheet of glass catches the room. */
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --shadow-2: 0 8px 24px -12px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --shadow-3: 0 18px 44px -18px rgba(0, 0, 0, 0.72),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  --shadow-4: 0 32px 72px -24px rgba(0, 0, 0, 0.82),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+  /* White cards floating over the hero photograph need their own shadow,
+     because the ground under them is an image and not a flat colour. */
+  --shadow-on-photo: 0 1px 1px rgba(0, 0, 0, 0.4), 0 8px 18px -6px rgba(0, 0, 0, 0.55);
+  --shadow-on-photo-hi: 0 2px 3px rgba(0, 0, 0, 0.45),
+    0 18px 36px -10px rgba(0, 0, 0, 0.68);
+
+  --radius-1: 10px;
+  --radius-2: 16px;
+  --radius-3: 22px;
+  --radius-4: 30px;
+
+  /* The blur a sheet of glass carries. */
+  --blur-glass: 22px;
+
+  --scroll-thumb: rgba(255, 255, 255, 0.16);
+
+  /* Fluid type scale. Nothing is a fixed pixel size. */
+  --fs-hero: clamp(2.25rem, 1.5rem + 3.2vw, 4rem);
+  --fs-title: clamp(1.5rem, 1.2rem + 1.1vw, 2rem);
+  --fs-lead: clamp(1rem, 0.95rem + 0.35vw, 1.175rem);
+
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Inter Tight", "Inter", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", Menlo, Monaco, monospace;
 }
 
 html,
-body,
-#root {
+body {
   height: 100%;
+  overflow-x: clip;
 }
 
 body {
   margin: 0;
-  background: theme(colors.slate.50);
-  color: theme(colors.ink.DEFAULT);
+  background-color: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, h4 {
-  font-family: "Barlow Condensed", "Barlow", system-ui, sans-serif;
-  letter-spacing: 0.02em;
+/* Scrollbars are part of the surface. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--scroll-thumb);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--line-strong);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
   font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.12;
 }
 
 table {
@@ -32,23 +174,292 @@ table {
   border-spacing: 0;
 }
 
+/* Every interactive control gets an instant, visible focus ring. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  border-radius: var(--radius-1);
+}
+
+/* Inside the chrome the ring has no contrast, so it inverts. */
+.on-chrome :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline-color: var(--ink-on-dark);
+}
+
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
 
-[data-state="open"] > svg.chevron {
-  transform: rotate(180deg);
-}
+/* ── Surfaces ─────────────────────────────────────────────────────────── */
 
-[data-state] svg.chevron {
-  transition: transform 150ms ease-out;
-}
+@layer components {
+  /*
+   * A card. A sheet of glass: the light behind it comes through, and a
+   * hairline along the top edge catches the room. This is the default
+   * resting surface for everything.
+   */
+  .panel {
+    background-color: var(--surface-1);
+    backdrop-filter: blur(var(--blur-glass)) saturate(140%);
+    -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(140%);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-3);
+    box-shadow: var(--shadow-1);
+  }
 
-@keyframes spinner {
-  to {
-    transform: rotate(360deg);
+  /* One level up — a card that stands proud of another card. */
+  .panel-lift {
+    background-color: var(--surface-3);
+    backdrop-filter: blur(var(--blur-glass)) saturate(140%);
+    -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(140%);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-2);
+    box-shadow: var(--shadow-2);
+  }
+
+  /*
+   * A recessed well — tables and the player pool. It is cut into the
+   * surface, so it takes a dark fill and an inner shadow rather than a
+   * blur. Dark, because a table has to stay readable wherever the light in
+   * the room happens to be falling.
+   */
+  .well {
+    background-color: rgba(6, 9, 15, 0.42);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-2);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+  }
+
+  /*
+   * The top of the stack — a menu that overlaps the page. More blur, a
+   * brighter sheet, deep enough to read as genuinely floating.
+   */
+  .floating {
+    background-color: var(--surface-4);
+    backdrop-filter: blur(34px) saturate(150%);
+    -webkit-backdrop-filter: blur(34px) saturate(150%);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-3);
+    box-shadow: var(--shadow-4);
+  }
+
+  /* The dimmer that sits over the page while a menu is open. */
+  .scrim {
+    background-color: rgba(3, 6, 12, 0.62);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+
+  /*
+   * The one bright thing on a screen. It is the only solid white surface
+   * in the app, which is exactly why it reads as the thing to press.
+   */
+  .action {
+    background-color: var(--action);
+    color: #07090e;
+    font-weight: 600;
+    border-radius: var(--radius-2);
+    box-shadow: 0 10px 30px -12px rgba(255, 255, 255, 0.42);
+    transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
+  }
+
+  .action:hover:not(:disabled) {
+    filter: brightness(0.94);
+    box-shadow: 0 14px 38px -12px rgba(255, 255, 255, 0.5);
+  }
+
+  .action:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  .action:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* A circular version of the primary action, for one prominent control. */
+  .action-round {
+    background-color: var(--action);
+    color: #07090e;
+    border-radius: 999px;
+    box-shadow: 0 10px 26px -10px rgba(255, 255, 255, 0.45);
+    transition: transform 140ms ease, filter 140ms ease;
+  }
+
+  .action-round:hover:not(:disabled) {
+    filter: brightness(0.94);
+  }
+
+  .action-round:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  /* Secondary control — quiet, on the same surface. */
+  .control {
+    background-color: var(--surface-1);
+    color: var(--ink);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-2);
+    box-shadow: var(--shadow-1);
+    transition: border-color 140ms ease, background-color 140ms ease,
+      color 140ms ease;
+  }
+
+  .control:hover:not(:disabled) {
+    border-color: rgba(255, 255, 255, 0.3);
+    background-color: var(--surface-3);
+  }
+
+  .control:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  /* A tinted chip — carries meaning, never decoration. */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--radius-1);
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    letter-spacing: 0;
+    background-color: var(--brand-wash);
+    color: var(--brand-bright);
+  }
+
+  .chip-good {
+    background-color: var(--good-wash);
+    color: var(--good);
+  }
+
+  .chip-warn {
+    background-color: var(--warn-wash);
+    color: var(--warn);
+  }
+
+  .chip-action {
+    background-color: var(--danger-wash);
+    color: var(--danger);
+  }
+
+  /* A label — body face, a step smaller, sentence case, never tracked out. */
+  .label {
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+    color: var(--ink-muted);
+    letter-spacing: 0;
+  }
+
+  .label-quiet {
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+    color: var(--ink-subtle);
+    letter-spacing: 0;
+  }
+
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
   }
 }
-.spin {
-  animation: spinner 1s linear infinite;
+
+/* ── Material ─────────────────────────────────────────────────────────── */
+
+/*
+ * Grain. Real photographs and large flat fills band on dark screens; a fine
+ * noise pass over them stops it and gives the surface a little tooth.
+ */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.2;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── Motion ───────────────────────────────────────────────────────────── */
+
+/*
+ * One reveal, and it carries meaning: lineup cards arrive in rank order,
+ * so the order you read them in is the order they were built. Everything
+ * here is transform/opacity only.
+ */
+@keyframes fg-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.reveal {
+  animation: fg-rise 420ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+/* The live dot pulses only while the feed is refreshing — it states fact. */
+@keyframes fg-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.live-dot {
+  animation: fg-pulse 1.8s ease-in-out infinite;
+}
+
+/* The light in the room drifts, very slowly. It is the only thing on the
+   page that moves without anyone asking it to. */
+@keyframes fg-drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(3%, -2%, 0) scale(1.08);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.drift-a {
+  animation: fg-drift 120s ease-in-out infinite;
+}
+
+.drift-b {
+  animation: fg-drift 96s ease-in-out infinite reverse;
+}
+
+.drift-c {
+  animation: fg-drift 140s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .reveal {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
 }
