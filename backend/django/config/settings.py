@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from urllib.parse import parse_qs, unquote, urlparse
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -77,9 +78,34 @@ TEMPLATES = [
 
 # ───────────────────────────────────────────────────────────────────────────
 # Database
+#
+# DATABASE_URL is the deploy contract: Render supplies it from the managed
+# Postgres (see render.yaml) and CI supplies it for the test database. The
+# PG* variables stay as a fallback for a Postgres started by hand.
+#
+# Ignoring DATABASE_URL here meant a deployed backend looked for a passwordless
+# Postgres on localhost and never started.
 # ───────────────────────────────────────────────────────────────────────────
-DATABASES = {
-    "default": {
+_DATABASE_URL = os.environ.get("DATABASE_URL", "")
+
+if _DATABASE_URL:
+    _u = urlparse(_DATABASE_URL)
+    _options = {}
+    _sslmode = parse_qs(_u.query).get("sslmode", [None])[0]
+    if _sslmode:
+        _options["sslmode"] = _sslmode
+    _db = {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": unquote(_u.path.lstrip("/")),
+        "USER": unquote(_u.username or ""),
+        "PASSWORD": unquote(_u.password or ""),
+        "HOST": _u.hostname or "",
+        "PORT": str(_u.port or 5432),
+    }
+    if _options:
+        _db["OPTIONS"] = _options
+else:
+    _db = {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": os.environ.get("PGDATABASE", "fantasy_grinder"),
         "USER": os.environ.get("PGUSER", "postgres"),
@@ -87,7 +113,8 @@ DATABASES = {
         "HOST": os.environ.get("PGHOST", "localhost"),
         "PORT": os.environ.get("PGPORT", "5432"),
     }
-}
+
+DATABASES = {"default": _db}
 
 # ───────────────────────────────────────────────────────────────────────────
 # Passwords (admin only — anonymous user flow has no passwords)
