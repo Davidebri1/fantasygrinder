@@ -64,6 +64,24 @@ function contestText(p: Player): string {
   return (p.game_info ?? "").trim();
 }
 
+/**
+ * Where this player's projection number comes from, in plain words.
+ * A hand-edited number is always the customer's own.
+ */
+function projectionSourceText(p: Player): string {
+  if (p.user_projection != null) return "My projection (edited)";
+  switch (p.projection_source) {
+    case "dk":
+      return "DraftKings projection";
+    case "rotowire":
+      return "Rotowire projection";
+    case "mine":
+      return "My projection";
+    default:
+      return "Season-average (est.)";
+  }
+}
+
 export function PlayerPoolTable({
   sport,
   players,
@@ -242,6 +260,15 @@ export function PlayerPoolTable({
         header: "Proj (est.)",
         cell: (i) => (
           <span className="tabular-nums">{fmtDecimal(i.getValue<number>())}</span>
+        ),
+      }) as ColumnDef<Player, unknown>,
+      ch.accessor(projectionSourceText, {
+        id: "projection_source",
+        header: "Projection source",
+        cell: ({ row }) => (
+          <span className="text-xs text-ink-muted">
+            {projectionSourceText(row.original)}
+          </span>
         ),
       }) as ColumnDef<Player, unknown>,
       ch.accessor((r: Player) => r.projected_ownership ?? 0, {
