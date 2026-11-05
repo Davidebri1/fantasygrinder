@@ -66,7 +66,9 @@ function wranglerCommand() {
     { stdio: "ignore", shell: true },
   );
   if (probe.status === 0) return { cmd: "wrangler", args: [] };
-  return { cmd: process.platform === "win32" ? "npx.cmd" : "npx", args: ["--yes", "wrangler"] };
+  // Pinned: 4.158+ refuses OAuth in non-interactive shells (demands an API
+  // token). 4.157 refreshes the stored login on its own.
+  return { cmd: process.platform === "win32" ? "npx.cmd" : "npx", args: ["--yes", "wrangler@4.157.0"] };
 }
 
 // On Windows a `.cmd` shim (npx.cmd) cannot be spawned directly — it needs a
