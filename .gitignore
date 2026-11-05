@@ -18,3 +18,7 @@ htmlcov/
 .DS_Store
 *.tsbuildinfo
 preview.err
+
+# Scratch space for audits and one-off checks
+.tmp-audit/
+
