@@ -6,8 +6,9 @@ export function SportSelectionScreen() {
       <HeroPanel />
 
       {/* ── Shared engine ────────────────────────────────────────────
-          Sits below the hero cards, which hang over this band. */}
-      <section className="panel relative z-10 p-6 md:p-8">
+          The hero cards sit in their own band above this section, so
+          nothing here reaches into them. */}
+      <section className="panel p-6 md:p-8">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <div>
             <h2 className="font-condensed text-2xl font-semibold tracking-tight text-ink">
@@ -35,7 +36,7 @@ export function SportSelectionScreen() {
       </section>
 
       {/* ── Stacks ─────────────────────────────────────────────────── */}
-      <section className="panel relative z-10 p-6 md:p-8">
+      <section className="panel p-6 md:p-8">
         <h2 className="font-condensed text-2xl font-semibold tracking-tight text-ink">
           Stacks that shape the lineup, not just the score
         </h2>

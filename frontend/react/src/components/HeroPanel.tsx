@@ -64,7 +64,7 @@ export function HeroPanel() {
   const [photoOk, setPhotoOk] = useState(true);
 
   return (
-    <section className="relative z-20">
+    <section className="relative">
       {/* ── The photograph, in a glass frame ────────────────────────── */}
       <div className="relative -mx-6 md:-mx-0 overflow-hidden rounded-4 grain border border-line">
         <div aria-hidden className="absolute inset-0">
@@ -107,7 +107,7 @@ export function HeroPanel() {
         </div>
 
         {/* ── Content plane ────────────────────────────────────────── */}
-        <div className="relative px-6 pt-14 pb-24 md:px-12 md:pt-20 md:pb-28">
+        <div className="relative px-6 pt-12 pb-14 md:px-12 md:pt-16 md:pb-20">
           <div className="max-w-[54ch]">
             <h1
               className="font-condensed font-semibold text-ink"
@@ -148,11 +148,15 @@ export function HeroPanel() {
         </div>
       </div>
 
-      {/* ── The cards, one band in front of the photograph ───────────
-          They hang over the bottom edge of the photograph together, on a
-          single line, so the row reads as one object in front of the room
-          rather than as boxes dropped at different heights. */}
-      <div className="relative -mt-16 px-6 pb-12 md:px-12 md:pb-16">
+      {/* ── The cards, in their own band ────────────────────────────
+          They sit BELOW the photograph, not across it. The banner's edge
+          used to run straight through the glass, cutting the cards in
+          half — which is invisible against a dark room and glaring the
+          moment the background is light. Nothing overlaps them now: the
+          banner stops above the row, the row starts below it, and the
+          depth comes from the shadow and the glass rather than from
+          slicing the photograph. */}
+      <div className="mt-8 px-6 md:px-12">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-5">
           {SPORTS.map((s) => (
             <Link
