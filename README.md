@@ -7,7 +7,7 @@ A DFS lineup optimizer for **NBA, MMA, and Golf** with **player headshots**, **s
 | | |
 |---|---|
 | **Live site** | <https://fantasygrinder.surge.sh/> (Surge, built from `frontend/react`) |
-| **Repository** | `github.com/Davidebri1/fantasy-grinder` — this repo, home of the app |
+| **Repository** | `github.com/Davidebri1/fantasygrinder` — this repo, home of the app |
 | **Frontend** | `frontend/react` — Vite + React 18 + TypeScript + Tailwind |
 | **Backend** | `backend/django` — Django + Postgres (ESPN sync, Odds API, audit log) |
 | **Optimizer** | `frontend/react/src/optimizer` — in-browser MILP/simplex solver, portfolio + stacks |
@@ -20,8 +20,13 @@ npm run build    # -> dist/ (this is what gets published)
 npm test         # vitest, includes stacks + portfolio suites
 ```
 
-The published Surge build predates the tip commit of this repo, which carries the
-glass visual rebuild and the real stacking/exposure engine.
+Publish it with the Surge CLI from `frontend/react` (`surge dist fantasygrinder.surge.sh`),
+then prove the live site is the build you just made:
+`node scripts/verify-deploy.mjs` compares the local files' SHA256 against the live ETags.
+
+**Status as of 2026-11-04:** the published Surge build predates this repo's tip commit. The
+repo carries the glass visual rebuild and the real stacking/exposure engine; the live site
+still serves the older September build.
 
 ## Architecture — what the product actually is
 
