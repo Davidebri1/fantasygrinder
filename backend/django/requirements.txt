@@ -27,7 +27,9 @@ requests>=2.31
 pytest>=8.0
 pytest-django>=4.8
 pytest-asyncio>=0.23
-hypothesis>=24.1
+# Hypothesis is on the 6.x line. The old ">=24.1" floor named a version that
+# never existed, which made pip fail and took every CI run down with it.
+hypothesis>=6.100
 faker>=24.0
 ruff>=0.4
 mypy>=1.10
