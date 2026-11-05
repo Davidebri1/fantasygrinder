@@ -5,7 +5,7 @@
 As of 2026-11-03, Fantasy Grinder is a DFS (daily fantasy sports) lineup optimizer covering **NBA, MMA
 and Golf**, built as a **Django + Postgres backend** with a **React/Vite frontend**.
 
-As of `Davidebri1/fantasygrinder@7aec943` (2026-11-03), the repository at `C:\Users\D\fantasygrinder`
+As of `Davidebri1/mavis-fantasy-grinder@7aec943` (2026-11-03), the repository at `C:\Users\D\mavis-fantasy-grinder`
 held:
 
 - `backend/django/` — Django + Postgres service. Apps `nba`, `mma`, `golf`, `common`; the optimizer
@@ -15,15 +15,15 @@ held:
 - `frontend/react/` — React 18 + TypeScript + Tailwind, built by Vite into `dist/`. This is the part
   that gets published to the public site.
 
-See [repository-extraction.md](repository-extraction.md) for how this repository came to be, and
-[locations.md](locations.md) for where the code lives on disk.
+See [mavis-repository-extraction.md](mavis-repository-extraction.md) for how this repository came to be, and
+[mavis-locations.md](mavis-locations.md) for where the code lives on disk.
 
 ## The two layers, and which one is the product
 
 This is the single most load-bearing distinction in the project, and it has been stated in the repo's own
 README since the React + Django rewrite.
 
-As of `Davidebri1/fantasygrinder@7aec943` (2026-11-03), `README.md` stated: the product is Django +
+As of `Davidebri1/mavis-fantasy-grinder@7aec943` (2026-11-03), `README.md` stated: the product is Django +
 Postgres + React, one service for deployment, and **"the in-browser optimizer is a fallback demo mode,
 not the product."**
 
@@ -43,7 +43,7 @@ deliverable, and a deploy that leaves the backend unreachable is a degraded stat
 
 ## The five strategies
 
-As of `Davidebri1/fantasygrinder@7aec943` (2026-11-03), `backend/django/optimizer/strategies.py`
+As of `Davidebri1/mavis-fantasy-grinder@7aec943` (2026-11-03), `backend/django/optimizer/strategies.py`
 defined five strategies, and `frontend/react/src/pages/SportSelectionScreen.tsx` presented the same
 five to the user as *"Five strategies, one engine"*:
 
@@ -70,7 +70,7 @@ exposure report, hero art"), 2026-11-03.
 
 A *stack* is a small set of players who belong together and score together — two teammates, the best
 players from both sides of one game, or two fighters in one bout. As of
-`Davidebri1/fantasygrinder@7aec943` (2026-11-03), `frontend/react/src/optimizer/stacks.ts` is the
+`Davidebri1/mavis-fantasy-grinder@7aec943` (2026-11-03), `frontend/react/src/optimizer/stacks.ts` is the
 implementation, and its own module docstring records the important constraint: the module **only
 proposes**. It never builds a lineup and never talks to the solver. It returns a `StackRule` that the
 engine writes into the build when the user picks that stack.
@@ -105,6 +105,6 @@ than silently ignoring it.
 
 As of 2026-11-04, the repo's `README.md` and `RUNBOOK.md` still describe **Netlify** and **Render**
 as the production targets, while the actually live public site is published to **Surge**. See
-[deployment.md](deployment.md) for the Surge flow and
-[locations.md](locations.md) for the rest of the ground truth. Treat the README's deploy section as
+[mavis-deployment.md](mavis-deployment.md) for the Surge flow and
+[mavis-locations.md](mavis-locations.md) for the rest of the ground truth. Treat the README's deploy section as
 historical until it is reconciled with what is live.

@@ -14,7 +14,7 @@ be reintroduced.
 
 ## What replaced it
 
-As of `Davidebri1/fantasygrinder@7aec943` (2026-11-03), commit
+As of `Davidebri1/mavis-fantasy-grinder@7aec943` (2026-11-03), commit
 *"Home screen: one aligned row of sport cards, no staggered heights"*, the home screen is built in
 `frontend/react/src/components/HeroPanel.tsx`:
 
@@ -52,7 +52,7 @@ Four cards, one row, one top edge, one height, one width, even gutters.
 ## How to re-run the measurement
 
 The verification script already exists in the repo:
-`frontend/react/scripts/check-card-layout.mjs`.
+`frontend/react/scripts/mavis-check-card-layout.mjs`.
 
 As of 2026-11-03 it launches Playwright at a 1440x900 viewport, selects the card elements, and prints each
 card's `href`, `x`, `y`, `w`, `h`, `transform` and `zIndex`. It then prints the unique tops, the
@@ -69,7 +69,7 @@ Typical use, as of 2026-11-03:
 ```bash
 cd frontend/react
 npm run build && npm run preview          # serve the build the script points at
-node scripts/check-card-layout.mjs http://localhost:4174/ home-cards-desktop.png
+node scripts/mavis-check-card-layout.mjs http://localhost:4174/ home-cards-desktop.png
 ```
 
 **Caveat, recorded 2026-11-03:** the script pins `executablePath` to one specific installed headless
@@ -78,5 +78,26 @@ machine, the script fails to launch even though Playwright itself is installed. 
 build the project expects may not match what is installed locally — check the path before concluding that
 the layout regressed.
 
-See also [deployment.md](deployment.md) for how a build gets published and proved live, and
-[product.md](product.md) for the rest of the app.
+See also [mavis-deployment.md](mavis-deployment.md) for how a build gets published and proved live, and
+[mavis-product.md](mavis-product.md) for the rest of the app.
+
+## 2026-11-04 — the overlap was removed
+
+The project owner rejected the arrangement that shipped in `7aec943` for a different reason than the
+staggered heights: the cards hung over the bottom edge of the photograph, so the **banner's border ran
+straight through the glass**. Against the dark room it read as a cut; against a light background it would
+be glaring, and the app has no light mode today but one is expected.
+
+The fix, in the commit that also moved the deploy to Cloudflare:
+
+- The cards sit in their own band below the photograph (`mt-8` instead of `-mt-16`). Nothing overlaps
+  them and nothing intercepts them.
+- The banner is smaller: the content plane's padding came down from `pt-14 pb-24 / pt-20 pb-28` to
+  `pt-12 pb-14 / pt-16 pb-20`.
+- The z-index stacking between the hero section and the sections below it was removed, because there is
+  no longer any overlap to resolve.
+- The elevation is unchanged — the same glass, the same `shadow-3`, the same border. Only the overlap
+  went.
+
+At 1440x900 after the change the four cards still share one top edge, one height and one width with even
+gutters, measured with `mavis-mavis-check-card-layout.mjs`.

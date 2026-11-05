@@ -6,8 +6,8 @@ A DFS lineup optimizer for **NBA, MMA, and Golf** with **player headshots**, **s
 
 | | |
 |---|---|
-| **Live site** | <https://fantasygrinder.surge.sh/> (Surge, built from `frontend/react`) |
-| **Repository** | `github.com/Davidebri1/fantasygrinder` — this repo, home of the app |
+| **Live site** | <https://mavis-fantasy-grinder.pages.dev> (Cloudflare Pages, built from `frontend/react`) |
+| **Repository** | `github.com/Davidebri1/mavis-fantasy-grinder` — this repo, home of the app |
 | **Frontend** | `frontend/react` — Vite + React 18 + TypeScript + Tailwind |
 | **Backend** | `backend/django` — Django + Postgres (ESPN sync, Odds API, audit log) |
 | **Optimizer** | `frontend/react/src/optimizer` — in-browser MILP/simplex solver, portfolio + stacks |
@@ -20,13 +20,15 @@ npm run build    # -> dist/ (this is what gets published)
 npm test         # vitest, includes stacks + portfolio suites
 ```
 
-Publish it with the Surge CLI from `frontend/react` (`surge dist fantasygrinder.surge.sh`),
-then prove the live site is the build you just made:
-`node scripts/verify-deploy.mjs` compares the local files' SHA256 against the live ETags.
+Publish it to Cloudflare Pages and then prove the live site is that exact build:
 
-**Status as of 2026-11-04:** the published Surge build predates this repo's tip commit. The
-repo carries the glass visual rebuild and the real stacking/exposure engine; the live site
-still serves the older September build.
+```bash
+node scripts/mavis-deploy-cloudflare.mjs    # uploads dist/ to the Pages project
+node scripts/mavis-verify-deploy.mjs        # compares SHA256 of every asset, local vs live
+```
+
+**Status as of 2026-11-04:** live at `https://mavis-fantasy-grinder.pages.dev`, serving the
+build in this repo's tip commit — verified by SHA256, not by assumption.
 
 ## Architecture — what the product actually is
 

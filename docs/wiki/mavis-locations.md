@@ -4,12 +4,12 @@ All paths below were confirmed to resolve on **2026-11-04** unless a different d
 
 ## The canonical home
 
-- **Repository**: the private GitHub repo `Davidebri1/fantasygrinder`, branch `main`.
-- **Local checkout**: `C:\Users\D\fantasygrinder`.
+- **Repository**: the private GitHub repo `Davidebri1/mavis-fantasy-grinder`, branch `main`.
+- **Local checkout**: `C:\Users\D\mavis-fantasy-grinder`.
 - As of 2026-11-04 the tip commit of that checkout was `7aec943`.
 - A second git remote, named `monorepo`, points at the monorepo checkout for history access.
 
-The extraction that produced this is recorded in [repository-extraction.md](repository-extraction.md).
+The extraction that produced this is recorded in [mavis-repository-extraction.md](mavis-repository-extraction.md).
 
 ## The old locations, and why they are not the home
 
@@ -45,18 +45,27 @@ near-misses, all of which are *not* the app:
   Tailwind product state**, not this app.
 
 The practical consequence: the Drive is not a backup of the current product. The git repository at
-`C:\Users\D\fantasygrinder` is the only copy of the current code, and the 2026-11-03 rescue in
-[repository-extraction.md](repository-extraction.md) is the reason the newest work exists at all.
+`C:\Users\D\mavis-fantasy-grinder` is the only copy of the current code, and the 2026-11-03 rescue in
+[mavis-repository-extraction.md](mavis-repository-extraction.md) is the reason the newest work exists at all.
 
 ## Build output and public site
 
-- **Frontend source**: `C:\Users\D\fantasygrinder\frontend\react`
-- **Build output**: `C:\Users\D\fantasygrinder\frontend\react\dist` — this is what gets published.
-- **Backend source**: `C:\Users\D\fantasygrinder\backend\django`
+- **Frontend source**: `C:\Users\D\mavis-fantasy-grinder\frontend\react`
+- **Build output**: `C:\Users\D\mavis-fantasy-grinder\frontend\react\dist` — this is what gets published.
+- **Backend source**: `C:\Users\D\mavis-fantasy-grinder\backend\django`
 - **Live public site**: `https://fantasygrinder.surge.sh/` — as of 2026-11-04 still serving the
-  September build. See [deployment.md](deployment.md).
+  September build. See [mavis-deployment.md](mavis-deployment.md).
 
 ## Operator home-directory files
 
 - The Surge credential lives in the operator's `~/.netrc` and nowhere else. As of 2026-10-31 that file
-  had no backup on the machine. See [credential-incident.md](credential-incident.md).
+  had no backup on the machine. See [mavis-credential-incident.md](mavis-credential-incident.md).
+
+## 2026-11-04 — where things live after the rename
+
+- Repository: `Davidebri1/mavis-fantasy-grinder` (public). The old name redirects.
+- Local checkout: `C:\Users\D\mavis-fantasy-grinder`.
+- Live site: <https://mavis-fantasy-grinder.pages.dev> (Cloudflare Pages project
+  `mavis-fantasy-grinder`).
+- Scripts live in `frontend/react/scripts/` and carry the `mavis-` prefix:
+  `mavis-mavis-check-card-layout.mjs`, `mavis-deploy-cloudflare.mjs`, `mavis-verify-deploy.mjs`.

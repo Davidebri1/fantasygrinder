@@ -54,5 +54,5 @@ This is the recovery path. It is interactive by design and it is the only path t
 
 ## Related
 
-- [deployment.md](deployment.md) — the publish flow that triggered this, and how to verify a publish.
-- [locations.md](locations.md) — where the operator's home-directory files live relative to the repos.
+- [mavis-deployment.md](mavis-deployment.md) — the publish flow that triggered this, and how to verify a publish.
+- [mavis-locations.md](mavis-locations.md) — where the operator's home-directory files live relative to the repos.
