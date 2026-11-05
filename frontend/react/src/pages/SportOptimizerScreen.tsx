@@ -155,11 +155,18 @@ export function SportOptimizerScreen({ sport }: { sport: Sport }) {
   }, [sport]);
 
   // Live slate: load on entry, then keep it current. No user input needed.
+  //
+  // An imported roster (a DraftKings CSV the customer uploaded) is never
+  // touched by the background refresh — it would silently overwrite the
+  // real salaries he imported with modelled ones. Only the Refresh button
+  // replaces an imported pool, because that is an explicit act.
   useEffect(() => {
     let cancelled = false;
     void loadLive(sport);
     const timer = setInterval(() => {
-      if (!cancelled) void loadLive(sport);
+      if (cancelled) return;
+      if (useAppStore.getState().rosterSource[sport] === "imported") return;
+      void loadLive(sport);
     }, 5 * 60 * 1000);
     return () => {
       cancelled = true;
@@ -376,7 +383,9 @@ export function SportOptimizerScreen({ sport }: { sport: Sport }) {
   }, [lineups, rotoContext]);
 
   const statusLine =
-    liveStatus === "live"
+    rosterSource === "imported"
+      ? `Imported roster · ${players.length} players — your file's salaries are in use; background refresh paused`
+      : liveStatus === "live"
       ? `Live from ESPN · ${players.length} players · ${liveGames.length} ${
           liveGames.length === 1 ? "game" : "games"
         }`
