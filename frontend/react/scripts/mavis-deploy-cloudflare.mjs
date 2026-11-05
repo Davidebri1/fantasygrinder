@@ -69,26 +69,46 @@ function wranglerCommand() {
   return { cmd: process.platform === "win32" ? "npx.cmd" : "npx", args: ["--yes", "wrangler"] };
 }
 
-const who = spawnSync(
-  process.platform === "win32" ? "where" : "which",
-  ["wrangler"],
-  { stdio: "ignore", shell: true },
-);
+// On Windows a `.cmd` shim (npx.cmd) cannot be spawned directly — it needs a
+// shell. Without this the auth check below fails with ENOENT and the script
+// wrongly reports "not authenticated".
+const NEEDS_SHELL = process.platform === "win32";
+
+/** Quote an argument for a Windows shell invocation. */
+function shellArg(a) {
+  return NEEDS_SHELL && /[\s"]/.test(a) ? `"${a.replace(/"/g, '\\"')}"` : a;
+}
+
 const { cmd, args: prefix } = wranglerCommand();
 
-const check = spawnSync(cmd, [...prefix, "whoami"], { encoding: "utf8" });
+const check = spawnSync(
+  cmd,
+  [...prefix, "whoami"].map(shellArg),
+  { encoding: "utf8", shell: NEEDS_SHELL },
+);
 if (check.status !== 0) {
   console.error(
     "\nWrangler is not authenticated on this machine.\n" +
-      "Run `npx wrangler login` and approve it in your browser, then run this again.",
+      "Run `npx wrangler login` and approve it in your browser, then run this again.\n" +
+      `(${check.stderr ?? check.error?.message ?? "whoami failed"})`,
   );
   process.exit(1);
 }
 
 const child = spawn(
   cmd,
-  [...prefix, "pages", "deploy", DIST, "--project-name", PROJECT, "--branch", branch, "--commit-dirty=true"],
-  { stdio: "inherit", env: process.env },
+  [
+    ...prefix,
+    "pages",
+    "deploy",
+    DIST,
+    "--project-name",
+    PROJECT,
+    "--branch",
+    branch,
+    "--commit-dirty=true",
+  ].map(shellArg),
+  { stdio: "inherit", env: process.env, shell: NEEDS_SHELL },
 );
 
 child.on("exit", (code) => {

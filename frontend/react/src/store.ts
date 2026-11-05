@@ -56,6 +56,15 @@ function toWire(p: EnginePlayer): Player {
 
 export type LiveStatus = "idle" | "loading" | "live" | "empty" | "offline";
 
+/**
+ * Where the roster currently on screen came from.
+ *
+ * "sample" means the live feed failed and we fell back to the bundled sample
+ * slate. The UI must say so loudly — a customer who enters a lineup built from
+ * sample data has been told a lie by the product.
+ */
+export type RosterSource = "live" | "sample" | "imported";
+
 interface AppState {
   // Working set
   players: Record<string /* sport */, Player[]>;
@@ -69,6 +78,8 @@ interface AppState {
   // Live feed state
   /** "idle" | "loading" | "live" | "empty" | "offline" per sport. */
   liveStatus: Record<string, LiveStatus>;
+  /** Where the roster on screen came from — drives the sample-data banner. */
+  rosterSource: Record<string, RosterSource>;
   liveGames: Record<string, LiveGame[]>;
   liveWarnings: Record<string, string[]>;
   lastSyncedAt: Record<string, string | null>;
@@ -94,7 +105,10 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       players: { nba: [], nfl: [], mma: [], golf: [] },
       setPlayers: (sport, players) =>
-        set((s) => ({ players: { ...s.players, [sport]: players } })),
+        set((s) => ({
+          players: { ...s.players, [sport]: players },
+          rosterSource: { ...s.rosterSource, [sport]: "imported" },
+        })),
       updatePlayer: (sport, playerId, patch) =>
         set((s) => ({
           players: {
@@ -109,20 +123,25 @@ export const useAppStore = create<AppState>()(
 
       loadSample: (sport) => {
         seedHeadshotCache(sampleHeadshotCache());
+        const setRoster = (roster: Player[]) => {
+          set((s) => ({
+            players: { ...s.players, [sport]: roster },
+            rosterSource: { ...s.rosterSource, [sport]: "sample" as RosterSource },
+          }));
+        };
         if (sport === "nba") {
           const roster = buildNbaSample().map(toWire);
-          set((s) => ({ players: { ...s.players, nba: roster } }));
+          setRoster(roster);
           void prefetchHeadshots(roster.map((p) => p.name));
         } else if (sport === "nfl") {
-          const roster = buildNflSample().map(toWire);
-          set((s) => ({ players: { ...s.players, nfl: roster } }));
+          setRoster(buildNflSample().map(toWire));
         } else if (sport === "mma") {
           const roster = buildMmaSample().map(toWire);
-          set((s) => ({ players: { ...s.players, mma: roster } }));
+          setRoster(roster);
           void prefetchHeadshots(roster.map((p) => p.name));
         } else {
           const roster = buildGolfSample().map(toWire);
-          set((s) => ({ players: { ...s.players, golf: roster } }));
+          setRoster(roster);
           void prefetchHeadshots(roster.map((p) => p.name));
         }
       },
@@ -134,6 +153,7 @@ export const useAppStore = create<AppState>()(
       },
 
       liveStatus: {},
+      rosterSource: {},
       liveGames: {},
       liveWarnings: {},
       lastSyncedAt: {},
@@ -164,6 +184,7 @@ export const useAppStore = create<AppState>()(
           });
           set((s) => ({
             players: { ...s.players, [sport]: merged },
+            rosterSource: { ...s.rosterSource, [sport]: "live" as RosterSource },
             liveStatus: {
               ...s.liveStatus,
               [sport]: merged.length > 0 ? "live" : "empty",

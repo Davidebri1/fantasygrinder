@@ -15,6 +15,7 @@ import { Card } from "./Card";
 import { buildContestPresets, recommendPicks, type ContestProfile } from "@/recommend";
 import type { Lineup, Sport } from "@/types";
 import { fmtDecimal, fmtMoney } from "@/lib/utils";
+import { ROI_NOTICE } from "@/lib/data-provenance";
 
 interface Props {
   sport: Sport;
@@ -157,7 +158,8 @@ export function RecommendationsPanel({ sport, lineups }: Props) {
             : "— over bankroll, reduce entries"}
         </span>
         <span className="text-xs text-ink-subtle">
-          Avg est. ROI: <strong className="text-ink">{(totalRoi * 100).toFixed(0)}%</strong>
+          Avg est. ROI (model):{" "}
+          <strong className="text-ink">{(totalRoi * 100).toFixed(0)}%</strong>
         </span>
       </div>
 
@@ -183,13 +185,17 @@ export function RecommendationsPanel({ sport, lineups }: Props) {
                   <strong className="font-semibold">
                     {fmtMoney(p.lineup.total_salary)}
                   </strong>{" "}
-                  salary · {fmtDecimal(p.lineup.total_projection)} proj ·{" "}
+                  salary (est.) · {fmtDecimal(p.lineup.total_projection)} proj
+                  (est.) ·{" "}
                   <span
                     className={
                       p.estimatedRoi > 0 ? "text-good" : "text-danger"
                     }
                   >
-                    {(p.estimatedRoi * 100).toFixed(0)}% est. ROI
+                    {(p.estimatedRoi * 100).toFixed(0)}% est. ROI (model)
+                  </span>{" "}
+                  <span className="text-ink-subtle">
+                    · {(p.estimatedCashRate * 100).toFixed(0)}% est. cash rate
                   </span>
                 </div>
               </div>
@@ -206,11 +212,13 @@ export function RecommendationsPanel({ sport, lineups }: Props) {
       </div>
 
       {picks.length > 0 && (
-        <p className="text-[11px] text-ink-subtle mt-3">
+        <p className="text-[11px] text-ink-subtle mt-3 leading-relaxed">
           Recommendation scoring is intentionally simple: cash picks = highest
           projected floor; GPP picks = projection × uniqueness; single-entry =
           best projection. Adjust the inputs above to match your actual
           contest.
+          <br />
+          {ROI_NOTICE}
         </p>
       )}
     </Card>

@@ -201,8 +201,8 @@ export function RotoLineupCard({
           </span>
         </div>
         <div className="flex-1 grid grid-cols-3 divide-x divide-line bg-surface-2">
-          <HeaderStat label="Projected" value={fmtDecimal(lineup.total_projection)} />
-          <HeaderStat label="Salary" value={fmtMoney(lineup.total_salary)} />
+          <HeaderStat label="Projected (est.)" value={fmtDecimal(lineup.total_projection)} />
+          <HeaderStat label="Salary (est.)" value={fmtMoney(lineup.total_salary)} />
           <HeaderStat label="Roto Score" value={`${fmtDecimal(rst)}%`} accent />
         </div>
       </header>
@@ -213,8 +213,8 @@ export function RotoLineupCard({
             <th className="label text-left font-normal px-3 py-1.5">Player</th>
             <th className="label text-left font-normal px-2 py-1.5">Team</th>
             <th className="label text-left font-normal px-2 py-1.5">Opp</th>
-            <th className="label text-right font-normal px-2 py-1.5">Salary</th>
-            <th className="label text-right font-normal px-2 py-1.5">Pts</th>
+            <th className="label text-right font-normal px-2 py-1.5">Salary (est.)</th>
+            <th className="label text-right font-normal px-2 py-1.5">Pts (est.)</th>
             <th className="label text-right font-normal px-3 py-1.5">Roto Score</th>
             <th className="label text-right font-normal px-3 py-1.5">Exposure</th>
           </tr>

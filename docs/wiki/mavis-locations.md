@@ -53,8 +53,9 @@ The practical consequence: the Drive is not a backup of the current product. The
 - **Frontend source**: `C:\Users\D\mavis-fantasy-grinder\frontend\react`
 - **Build output**: `C:\Users\D\mavis-fantasy-grinder\frontend\react\dist` — this is what gets published.
 - **Backend source**: `C:\Users\D\mavis-fantasy-grinder\backend\django`
-- **Live public site**: `https://fantasygrinder.surge.sh/` — as of 2026-11-04 still serving the
-  September build. See [mavis-deployment.md](mavis-deployment.md).
+- **Live public site**: <https://mavis-fantasy-grinder.pages.dev> — Cloudflare Pages project
+  `mavis-fantasy-grinder`. (Before 2026-11-04 this was `https://fantasygrinder.surge.sh/`, which
+  still serves the abandoned September build. See [mavis-deployment.md](mavis-deployment.md).)
 
 ## Operator home-directory files
 
@@ -68,4 +69,4 @@ The practical consequence: the Drive is not a backup of the current product. The
 - Live site: <https://mavis-fantasy-grinder.pages.dev> (Cloudflare Pages project
   `mavis-fantasy-grinder`).
 - Scripts live in `frontend/react/scripts/` and carry the `mavis-` prefix:
-  `mavis-mavis-check-card-layout.mjs`, `mavis-deploy-cloudflare.mjs`, `mavis-verify-deploy.mjs`.
+  `mavis-check-card-layout.mjs`, `mavis-deploy-cloudflare.mjs`, `mavis-verify-deploy.mjs`.

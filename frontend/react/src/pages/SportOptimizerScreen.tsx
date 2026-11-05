@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Download, PlayCircle, RefreshCw, Trash2, Upload, X } from "lucide-react";
 
 import { EspnSyncPanel } from "@/components/EspnSyncPanel";
+import { EstimateNotice, SampleDataBanner } from "@/components/DataDisclosure";
 import { ExposureReport, computeExposure } from "@/components/ExposureReport";
 import { ImportDialog } from "@/components/ImportDialog";
 import { LineupCountPicker } from "@/components/LineupCountPicker";
@@ -143,6 +144,7 @@ export function SportOptimizerScreen({ sport }: { sport: Sport }) {
   const liveGames = useAppStore((s) => s.liveGames[sport] ?? []);
   const liveWarnings = useAppStore((s) => s.liveWarnings[sport] ?? []);
   const lastSyncedAt = useAppStore((s) => s.lastSyncedAt[sport] ?? null);
+  const rosterSource = useAppStore((s) => s.rosterSource[sport] ?? "live");
   const lastResult = useAppStore((s) => s.lastResult);
   const setLastResult = useAppStore((s) => s.setLastResult);
   const clearLineups = useAppStore((s) => s.clearLineups);
@@ -381,7 +383,9 @@ export function SportOptimizerScreen({ sport }: { sport: Sport }) {
       : liveStatus === "loading"
         ? "Pulling the live slate"
         : liveStatus === "offline"
-          ? "Live feed unreachable — using the roster already loaded"
+          ? rosterSource === "sample"
+            ? "Live feed unreachable — showing the bundled sample roster"
+            : "Live feed unreachable — using the roster already loaded"
           : liveStatus === "empty"
             ? "No live slate on the board right now"
             : "Waiting for the slate";
@@ -499,6 +503,8 @@ export function SportOptimizerScreen({ sport }: { sport: Sport }) {
           page a horizon instead of one long undifferentiated column. */}
       <div className="h-px bg-line" />
 
+      {rosterSource === "sample" && <SampleDataBanner />}
+
       {allWarnings.length > 0 && (
         <ul className="well p-3 space-y-1">
           {allWarnings.map((w) => (
@@ -508,6 +514,8 @@ export function SportOptimizerScreen({ sport }: { sport: Sport }) {
           ))}
         </ul>
       )}
+
+      <EstimateNotice />
 
       {runError && (
         <p className="well p-3 label text-danger">The build failed: {runError}</p>

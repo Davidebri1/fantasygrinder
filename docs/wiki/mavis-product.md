@@ -27,19 +27,26 @@ As of `Davidebri1/mavis-fantasy-grinder@7aec943` (2026-11-03), `README.md` state
 Postgres + React, one service for deployment, and **"the in-browser optimizer is a fallback demo mode,
 not the product."**
 
-1. **Backend layer — Django + Postgres. Mandatory.** It owns slates, players, injury rows, news rows,
-   the audit log, ESPN sync and the Odds API. The README states plainly: *"The backend is mandatory, not
-   optional."* A build of the frontend alone is a demo; it is not the shipping product.
-2. **Frontend layer — React/Vite. Always required.** It renders the player pool, the generated lineups,
-   the recommendations panel, player avatars and the export actions.
-3. **In-browser optimizer — fallback only.** `frontend/react/src/optimizer/` is a TypeScript port of the
-   same engine and the same five strategies, so the app still works with no backend at all. As of
-   `7aec943` it contained `milp.ts`, `lp.ts`, `nba_classic.ts`, `portfolio.ts`, `stacks.ts`,
-   `simulate.ts`, `sports.ts`, `strategies.ts` and `worker.ts`. Its purpose is offline demo mode;
-   it is not what a customer is sold.
+> **Superseded 2026-11-04.** The README no longer says that, and the claim was wrong about what is
+> actually shipping. The live site — <https://mavis-fantasy-grinder.pages.dev> — is the **frontend
+> only**, on Cloudflare Pages, running the **in-browser optimizer**. The Django backend is in the
+> repo and CI-tested but **not deployed**, and nothing on the live site calls it. The correct
+> statement is: the in-browser optimizer is what the customer is using today; the backend is the
+> planned next layer. See [mavis-deployment.md](mavis-deployment.md).
 
-The practical consequence, stated on 2026-11-03: the published frontend alone is not a complete
-deliverable, and a deploy that leaves the backend unreachable is a degraded state, not a working product.
+1. **Backend layer — Django + Postgres.** It owns slates, players, injury rows, news rows,
+   the audit log, ESPN sync and the Odds API. It is **not deployed** as of 2026-11-04; it is one
+   Render Blueprint (`backend/django/render.yaml`) away from running.
+2. **Frontend layer — React/Vite. Always required.** It renders the player pool, the generated lineups,
+   the recommendations panel, player avatars and the export actions. This is the whole of what ships today.
+3. **In-browser optimizer — what the live site runs.** `frontend/react/src/optimizer/` is a
+   TypeScript port of the same engine and the same five strategies, so the app works with no backend
+   at all. As of `7aec943` it contained `milp.ts`, `lp.ts`, `nba_classic.ts`, `portfolio.ts`,
+   `stacks.ts`, `simulate.ts`, `sports.ts`, `strategies.ts` and `worker.ts`.
+
+The practical consequence, restated on 2026-11-04: a deploy that leaves the backend unreachable is
+not a broken product — the product runs entirely in the browser — but the backend's features
+(server-side slates, audit log, Odds API) are simply absent until it is deployed.
 
 ## The five strategies
 
@@ -103,8 +110,12 @@ than silently ignoring it.
 
 ## Open point worth carrying forward
 
-As of 2026-11-04, the repo's `README.md` and `RUNBOOK.md` still describe **Netlify** and **Render**
-as the production targets, while the actually live public site is published to **Surge**. See
-[mavis-deployment.md](mavis-deployment.md) for the Surge flow and
-[mavis-locations.md](mavis-locations.md) for the rest of the ground truth. Treat the README's deploy section as
-historical until it is reconciled with what is live.
+**Resolved 2026-11-04.** The README and RUNBOOK described **Netlify** and **Render** as the
+production targets while the live site was on **Surge** — a deploy-document drift that would have
+sent a customer to the wrong host. Both documents were rewritten on 2026-11-04 to state what is
+actually true: the public site is Cloudflare Pages at
+<https://mavis-fantasy-grinder.pages.dev>, the backend is in the repo but not deployed, and a deploy
+is only "done" when `mavis-verify-deploy.mjs` passes.
+
+**Still open:** the Django backend has never been deployed. Its features (server-side slates, audit
+log, Odds API) are absent from the live site until it is.

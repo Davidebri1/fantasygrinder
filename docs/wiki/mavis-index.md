@@ -15,8 +15,9 @@ matches your task. Nothing here is speculation: each statement was true on the d
 
 ## Product and project
 
-- [mavis-product.md](mavis-product.md) — What the product is: the mandatory Django + Postgres layer, the React/Vite
-  frontend, the in-browser optimizer fallback, the five strategies, and the stacking feature.
+- [mavis-product.md](mavis-product.md) — What the product is: the Django + Postgres layer (in the repo, not
+  deployed), the React/Vite frontend, the in-browser optimizer that the live site actually runs, the
+  five strategies, and the stacking feature.
   (Statements dated 2026-10-31 to 2026-11-04.)
 - [mavis-repository-extraction.md](mavis-repository-extraction.md) — The 2026-11-03 extraction of the app out of the
   monorepo into its own repo, how the uncommitted work was rescued, and how to get back to the old worktree.
@@ -28,8 +29,8 @@ matches your task. Nothing here is speculation: each statement was true on the d
 
 ## Operations
 
-- [mavis-deployment.md](mavis-deployment.md) — Publishing to Surge, and proving that the live site is the build you
-  think it is (ETag / `surge-stamp`).
+- [mavis-deployment.md](mavis-deployment.md) — Publishing to Cloudflare Pages, and proving that the live site is the
+  build you think it is (SHA256, asset by asset). The superseded Surge flow is kept there as history.
 - [mavis-credential-incident.md](mavis-credential-incident.md) — The 2026-10-31 `~/.netrc` wipe that destroyed the
   stored Surge token, and the recovery procedure that brought it back.
 - [mavis-locations.md](mavis-locations.md) — Every known location of the app: the new repo, the old worktree, the

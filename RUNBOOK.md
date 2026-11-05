@@ -1,41 +1,53 @@
 # Fantasy Grinder — Operator Runbook
 
-This runbook is for the customer / ops team. It assumes the system is deployed as
-described in `README.md`. Last verified against commit hash on Render/Netlify.
+For the customer / ops team. **Last verified 2026-11-04 against the live site and this repo's tip.**
 
-## What lives where
+## What is live today
 
-| Component | Where | How it's run |
+| Component | Where | Status |
 |---|---|---|
-| React frontend | Netlify (`fantasy-grinder.netlify.app`) | `npm run build` from `frontend/react/` |
-| Django API | Render (`fantasy-grinder-api.onrender.com`) | `gunicorn config.wsgi:application --workers 4` |
-| Postgres | Render (`fantasy_grinder_db`, plan: starter) | Managed by Render |
-| Static files | Served by Django (whitenoise) for dev; S3 in prod (TODO) |  |
+| React frontend | **Cloudflare Pages** — <https://mavis-fantasy-grinder.pages.dev> | **Live.** Built from `frontend/react/`, published by `scripts/mavis-deploy-cloudflare.mjs`. |
+| Optimizer | In the browser (Web Worker) | **Live.** This is what the public site runs. |
+| Django API | `backend/django` | **Not deployed.** The code is in the repo and CI-tested, but nothing on the live site calls it. |
+| Postgres | — | **Not deployed.** Comes with the Django service when it is deployed. |
+
+The live site is frontend-only. Anything in this runbook that mentions `fantasy-grinder-api.onrender.com`
+describes the backend **once it is deployed** — it is not running today.
 
 ## Health checks
 
 ```bash
-# Backend liveness
+# Frontend (live)
+curl -I https://mavis-fantasy-grinder.pages.dev/
+# → 200 OK, Content-Type: text/html
+
+# Is the live site the build you think it is?
+cd frontend/react
+node scripts/mavis-verify-deploy.mjs
+# → hashes every asset the live HTML references and compares it with dist/
+
+# Backend liveness — only after the Django service is deployed
 curl https://fantasy-grinder-api.onrender.com/api/health/
 # → {"status":"ok","service":"fantasy-grinder-api","version":"1.0.0","db":"ok"}
-
-# Frontend
-curl -I https://fantasy-grinder.netlify.app/
-# → 200 OK with `Content-Type: text/html`
 ```
+
+**A deploy is not finished until `mavis-verify-deploy.mjs` passes.** A command returning zero is not
+proof that the live site serves the new build.
 
 ## Common operations
 
 ### Re-seed sample data (NBA/MMA/Golf slates with players)
 
 ```bash
-# SSH into the Render web service (or run via Render shell)
+# Render shell, or locally:
+cd backend/django
 python manage.py load_sample_data --reset
 ```
 
 ### Tail the Django logs
 
 Render Dashboard → `fantasy-grinder-api` → Logs. Filter by level:
+
 - `INFO`: optimizer runs, requests
 - `WARNING`: parity drift, slow runs
 - `ERROR`: 500s, unhandled exceptions
@@ -43,21 +55,19 @@ Render Dashboard → `fantasy-grinder-api` → Logs. Filter by level:
 ### Run the parity harness against production data
 
 ```bash
-# Local
 cd backend/django
 pytest tests/parity -q -v --tb=short
-
-# CI (GitHub Actions — see .github/workflows/ci.yml)
+# CI runs the same suite on every push — see .github/workflows/ci.yml
 ```
 
 ### Toggle the optimizer backend
 
-The optimizer accepts `solver_backend=pulp|ortools`. Default `pulp` is parity-safe;
-`ortools` is opt-in for speed. Toggle per-request from the React UI:
+The optimizer accepts `solver_backend=pulp|ortools`. Default `pulp` is parity-safe; `ortools` is
+opt-in for speed.
 
-- Settings card → "Advanced" → "Solver backend" (in v1.1)
+> The backend requirements pin `pulp>=2.8,<3`. PuLP 4 changed the `LpVariable` API and the solver
+> code here is written against 2.x. Do not relax the pin without porting the solver.
 
-Or via API:
 ```bash
 curl -X POST $API/api/optimize/ -H 'Content-Type: application/json' -d '{
   "sport": "nba",
@@ -79,27 +89,30 @@ Migrations live under each app: `apps/<app>/migrations/*.py`.
 
 ## Deployment
 
-### Frontend (Netlify)
-
-Production builds auto-deploy from the main branch. PR previews deploy automatically.
+### Frontend (Cloudflare Pages) — this is the live path
 
 ```bash
-# Manual deploy
-netlify deploy --prod --dir=frontend/react/dist
+cd frontend/react
+npm run build
+node scripts/mavis-deploy-cloudflare.mjs
+node scripts/mavis-verify-deploy.mjs      # must pass before you call it done
 ```
 
-### Backend (Render)
+`mavis-deploy-cloudflare.mjs --dry-run` prints the file list and total size without uploading.
 
-Production deploys from `main`. Render runs the steps in `render.yaml`:
+### Backend (Render) — not deployed yet
+
+`backend/django/render.yaml` provisions the web service and Postgres. Render runs:
+
 1. `pip install -r requirements.txt`
 2. `python manage.py collectstatic --noinput`
-3. `python manage.py migrate` (auto-run on every deploy)
+3. `python manage.py migrate`
 4. `gunicorn config.wsgi:application --workers 4 --timeout 120`
 
 ### Rollback
 
 ```bash
-# Frontend: Netlify Dashboard → Deploys → "Publish deploy" on a previous deploy
+# Frontend: Cloudflare Pages dashboard → pick a previous deployment and roll back
 # Backend:  Render Dashboard → Manual Deploy → pick a previous commit
 ```
 
@@ -120,18 +133,19 @@ If `pytest tests/parity` fails on a new commit:
 
 | Symptom | Owner | Action |
 |---|---|---|
+| Live site shows a sample-roster banner | Frontend | ESPN's feed is unreachable from the customer's network, or ESPN is down. The app is behaving correctly — do not treat it as an outage. |
 | `api/optimize` returns `optimizer_error` | Backend | Check logs for stack trace. Usually a constraint solver issue. |
-| `import/csv` returns `import_failed` | Backend | Verify the CSV has expected headers (`Name`, `Position`, `Salary`, `Game Info`). Re-export from DraftKings. |
-| Frontend 404 on `/nba` etc. | Frontend | Confirm `_redirects` rule in `netlify.toml` is `from=/* to=/index.html status=200`. |
+| `import/csv` returns `import_failed` | Backend | Verify the CSV has expected headers (`Name`, `Position`, `Salary`, `Game Info`). |
+| Frontend 404 on `/nba` etc. | Frontend | Check the SPA rewrite rule (`_redirects` / Pages config) sends unknown paths to `/index.html`. |
 | Parity test flakey | Backend | Solver noise. Re-run with explicit `seeds` in the request. |
 
 ## Capacity notes
 
 | Item | Today | At scale |
 |---|---|---|
-| Render web dyno | 4 workers × 120s timeout | CPU-bound: optimize of a 150-player NBA Monte Carlo takes ~30s with 10k sims |
-| Postgres | Starter (1 GB / 0.25 CU) | Upgrade to Standard when audit table > ~100k rows |
-| Netlify | 100 GB bandwidth/mo | Fine until ~50k MAU |
+| Cloudflare Pages | Static CDN, no server | Fine well past launch traffic |
+| Render web dyno (not live) | 4 workers × 120s timeout | CPU-bound: optimize of a 150-player NBA Monte Carlo takes ~30s with 10k sims |
+| Postgres (not live) | Starter (1 GB / 0.25 CU) | Upgrade to Standard when audit table > ~100k rows |
 | Solver throttling | 30/min/IP (`OptimizeThrottle`) | Adjust in `config/settings.py` if GTM requires higher |
 
 ## Incident contact

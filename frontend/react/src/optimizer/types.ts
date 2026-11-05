@@ -7,12 +7,21 @@
  *
  * Architecture
  * ------------
- *  - `players.ts`     — sport-agnostic Player record.
- *  - `simulate.ts`    — Box-Muller + Cholesky for correlated Monte Carlo.
- *  - `milp.ts`        — branch-and-bound MILP solver (pure JS).
- *  - `sports/`        — sport-specific constraint builders.
- *  - `strategies.ts`  — 5 strategies (maxProjection, monteCarlo, …).
- *  - `index.ts`       — `runOptimize()` public API.
+ *  - `types.ts`      — this file: the shared Player/Strategy/Stack records.
+ *  - `simulate.ts`   — Box-Muller + Cholesky for correlated Monte Carlo.
+ *  - `portfolio.ts`  — the solver: exact branch-and-bound with an
+ *                      LP-relaxation upper bound, plus best-first expansion
+ *                      for the N-lineup portfolio.
+ *  - `lp.ts`         — the LP relaxation used for that upper bound.
+ *  - `stacks.ts`     — stack rules and stack-constrained construction.
+ *  - `sports.ts`     — sport-specific roster slots and constraint builders.
+ *  - `strategies.ts` — the objectives and simulation modes.
+ *  - `worker.ts`     — runs the optimizer off the main thread.
+ *  - `index.ts`      — `runOptimize()` public API.
+ *
+ *  (`milp.ts` and `nba_classic.ts` are earlier solver experiments. `milp.ts`
+ *  still exports the `ConstraintFn` type that `sports.ts` uses; neither file
+ *  is on the live solve path.)
  *
  * Performance targets match the Python reference: NBA Classic (~150
  * players, 8 slots) under 50 ms per lineup. We use a tight branch-and-bound

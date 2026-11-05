@@ -34,7 +34,8 @@ export const OBJECTIVES: {
   {
     value: "maxProjection",
     label: "Max Projection",
-    description: "Highest total projected points. Best for cash games and single-entry. Deterministic — this IS the best lineup by projection.",
+    description:
+      "Highest total projected points from this app's projection model. Best for cash games and single-entry. Deterministic — the top lineup by projection under the rules you have set.",
   },
   {
     value: "balanced",
@@ -56,7 +57,8 @@ export const SIMULATION_MODES: {
   {
     value: "off",
     label: "Off (deterministic)",
-    description: "Use raw projections. Fastest. Produces provably-optimal lineups.",
+    description:
+      "Use raw projections. Fastest — one exact solve of the roster. Stack and exposure rules are applied on top, so you get the best lineup that also satisfies them.",
   },
   {
     value: "monteCarlo",

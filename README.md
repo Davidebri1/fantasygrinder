@@ -1,77 +1,147 @@
 # Fantasy Grinder
 
-A DFS lineup optimizer for **NBA, MMA, and Golf** with **player headshots**, **smart recommendations**, and a **full database backend** (ESPN sync, Odds API, audit log). The backend is mandatory, not optional.
-
-## Where this lives
+A DFS lineup optimizer for **NBA, NFL, MMA and Golf**. It pulls the live slate from ESPN's public
+API, builds the roster, and runs a real optimizer in the browser — lineups, exposure, stacking, and
+"which of these should I actually enter" for the contest you are playing.
 
 | | |
 |---|---|
-| **Live site** | <https://mavis-fantasy-grinder.pages.dev> (Cloudflare Pages, built from `frontend/react`) |
-| **Repository** | `github.com/Davidebri1/mavis-fantasy-grinder` — this repo, home of the app |
+| **Live site** | <https://mavis-fantasy-grinder.pages.dev> — Cloudflare Pages, built from `frontend/react` |
+| **Repository** | <https://github.com/Davidebri1/mavis-fantasy-grinder> |
 | **Frontend** | `frontend/react` — Vite + React 18 + TypeScript + Tailwind |
-| **Backend** | `backend/django` — Django + Postgres (ESPN sync, Odds API, audit log) |
-| **Optimizer** | `frontend/react/src/optimizer` — in-browser MILP/simplex solver, portfolio + stacks |
+| **Optimizer** | `frontend/react/src/optimizer` — branch-and-bound solver with an LP bound, runs in a Web Worker |
+| **Backend** | `backend/django` — Django + Postgres (slates, injury/news feeds, audit log, server-side solver). **In the repo and CI-tested; not deployed.** |
 
 ```bash
 cd frontend/react
 npm install
 npm run dev      # local dev server
 npm run build    # -> dist/ (this is what gets published)
-npm test         # vitest, includes stacks + portfolio suites
+npm test         # vitest: 48 tests (stacks, portfolio, entry-value model, types, utils)
 ```
 
-Publish it to Cloudflare Pages and then prove the live site is that exact build:
+Publish and prove the live site is that exact build:
 
 ```bash
 node scripts/mavis-deploy-cloudflare.mjs    # uploads dist/ to the Pages project
 node scripts/mavis-verify-deploy.mjs        # compares SHA256 of every asset, local vs live
 ```
 
-**Status as of 2026-11-04:** live at `https://mavis-fantasy-grinder.pages.dev`, serving the
-build in this repo's tip commit — verified by SHA256, not by assumption.
+**Status (2026-11-04):** live at `https://mavis-fantasy-grinder.pages.dev`, serving the build in this
+repo's tip commit — verified by SHA256, not by assumption.
 
-## Architecture — what the product actually is
+---
 
-The product is **Django + Postgres + React**. One service for deployment (Render Blueprint provisions web service + database). The in-browser optimizer is a fallback demo mode, not the product.
+## What is real, and what is modelled
 
-| Layer | What | Status |
+This is the most important section in this file, so it is first.
+
+**Live and real** — everything ESPN publishes: player names, teams, positions, injuries, season
+averages, today's games and headshots. The app fetches these at runtime from ESPN's public API.
+
+**Modelled, and labelled as modelled everywhere they appear** — three numbers that DraftKings owns
+and ESPN does not publish:
+
+| Number | Where it comes from | How the app says so |
 |---|---|---|
-| **Django + Postgres** | Slates, players, injury rows, news rows, audit log, ESPN sync, Odds API | **Mandatory** — this is the app |
-| **React frontend** | Player pool, lineups, recommendations, avatars, exports | Always required |
-| **In-browser optimizer** | Same 5 strategies as the backend, in TypeScript, for offline demo | Fallback when backend unreachable |
+| **Projection** | DraftKings scoring applied to the player's ESPN season average | "Proj (est.)" on every column, row and export |
+| **Salary** | `$150 × projected points + $800`, snapped to $100, clamped to $3,000–$11,500 — so salary-cap maths behaves the way a DFS player expects | "Salary (est.)" everywhere |
+| **Ownership** | The player's percentile in the projection ranking — used only to find contrarian leverage | "Own % (est.)" everywhere |
 
-## Optimizer structure — facts vs samples
+The product does not claim these are DraftKings numbers, and it does not sell them as such. If you
+need true DraftKings salaries, this app does not have them.
 
-The solver is ONE engine (MILP / simplex). What varies is the objective:
+**The ROI estimate is a model.** It is built from this app's projections, the contest settings you
+enter, and a payout model that puts 70% of the prize pool on first place. It is labelled "est. ROI
+(model)" in the UI, and every pick also shows its modelled cash rate. It is not a DraftKings payout
+projection and it is not a promise.
 
-**Objectives (deterministic facts — "this IS the best lineup by X"):**
-- **Max Projection** — highest Σ projection. Cash games, single-entry.
-- **Balanced (Value)** — projection per dollar. Efficient builds.
-- **Salary Cap** — 70/30 salary-to-projection weight. Stars-and-scrubs.
+**Sample data is loud.** If the live ESPN feed cannot be reached, the app falls back to a bundled
+sample roster — and it says so in an amber banner across the top of the screen, not in a quiet
+status line. Lineups built from sample data are for demonstration only.
 
-**Simulation modes (probabilistic samples — "lineups that won under random conditions"):**
-- **Off** (default) — no simulation. Pure deterministic.
-- **Monte Carlo** — 1k–10k correlated outcome samples, optimize each.
-- **Contrarian** — like Monte Carlo but scores ÷ √ownership for leverage.
+---
 
-These are separate controls in the UI because they are different kinds of answers. The default is **Max Projection, simulation off** — a fact, fast, no waiting.
+## The optimizer
 
-## Value-adds no competitor ships
+One solver, three objectives, three simulation modes.
 
-1. **Player headshots** — every player in the pool, in every generated lineup, in the recommendations panel. Three-tier fallback (NBA CDN → deterministic initials). Visual recognition is the primary scan signal and every competitor is text-only.
-2. **Smart recommendations** — the optimizer produces lineups; the recommendations panel answers "which ones should I enter?" per contest type (cash / GPP / single) with bankroll awareness, ROI estimate, and per-pick reasoning.
-3. **ESPN injury + news sync** — public ESPN API → Postgres → inline OUT-badges next to affected players in your pool. Mandatory, wired, tested.
+**Objectives (deterministic):**
 
-## Deployment — Render, one Blueprint
+- **Max Projection** — the highest total projected points. Cash games and single-entry.
+- **Balanced (Value)** — projection per dollar of salary. Efficient builds.
+- **Salary Cap** — 70/30 salary-to-projection weight. Stars-and-scrubs builds.
+
+**Simulation modes:**
+
+- **Off** — one exact solve of the roster. The fastest path.
+- **Monte Carlo** — 1k–10k correlated outcome samples, one solve each, best unique lineups kept.
+- **Contrarian** — like Monte Carlo, but each simulated score is divided by √ownership so low-owned
+  ceiling plays gain leverage over chalk.
+
+**Portfolio and stacking** are real constraints, not decoration:
+
+- `portfolio.ts` is a best-first branch-and-bound search with an LP bound on the remaining space.
+  On a 421-player NFL pool it reproduces the exact brute-force optimum (134) over all 148,318 legal
+  rosters, and a projection bump is swapped into the lineup immediately.
+- Stack rules are enforced, not suggested. 150 lineups built against an LV@SF rule all held at least
+  four LV@SF players; after the rule was changed, 0 of 150 survived it.
+- Exposure is computed from the finished portfolio and independently recounted against the same
+  numbers.
+- When a rule cannot be met — an infeasible cap, an impossible stack — the app says so instead of
+  quietly returning a lineup that violates it.
+
+**Stacks** (targeting a game, a position, or a team) are a first-class control, and the "Stacks" tab
+shows the exposure of every stack you built.
+
+---
+
+## What this app does not do
+
+Stated plainly, because a customer shipping this to other people needs to know the edges:
+
+- **The Django backend is not deployed.** The live site is the frontend on Cloudflare Pages, running
+  the in-browser optimizer. The backend exists in this repo, is covered by CI, and is one Render
+  Blueprint (`backend/django/render.yaml`) away from running — but nothing on the live site calls it
+  today.
+- **No DraftKings salary, projection, ownership or contest data.** See *What is real, and what is
+  modelled* above.
+- **No accounts, no login, no payment.** State is per-device via `localStorage`.
+- **No live contest results.** Nothing here is connected to a real contest after you enter it.
+
+---
+
+## Deployment
+
+**Cloudflare Pages** is where the public site lives.
 
 ```bash
-git init && git add . && git commit -m "init"
-gh repo create fantasy-grinder --public --source=. --push
-# Render Dashboard → New Blueprint → render.yaml → provisions web + Postgres
-# Render shell: python manage.py migrate && python manage.py load_sample_data
-# Netlify: import repo, build = cd frontend/react && npm run build, publish = dist
-#   env: VITE_API_URL=https://<your-service>.onrender.com
+cd frontend/react
+npm run build
+node scripts/mavis-deploy-cloudflare.mjs        # or: npx wrangler pages deploy dist --project-name=mavis-fantasy-grinder
+node scripts/mavis-verify-deploy.mjs            # SHA256 every asset, local vs live
 ```
+
+`mavis-verify-deploy.mjs` is the point of the setup: it fetches the live site, reads the assets the
+live HTML actually references, hashes them, and compares against the local `dist/`. A deploy is
+"done" when that script passes — not when a command returns zero.
+
+### The Django backend (optional, not live)
+
+```bash
+cd backend/django
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+```
+
+`backend/django/render.yaml` provisions the web service and Postgres on Render. `config/settings.py`
+reads `DATABASE_URL` (password URL-decoded, `sslmode` honoured) and falls back to the individual
+`PG*` variables.
+
+`requirements.txt` pins `pulp>=2.8,<3`. PuLP 4 is a Rust-backed rewrite whose `LpVariable` no longer
+takes `(name, cat="Binary")`; the solver here is written against the 2.x API. Porting to PuLP 4 is a
+rewrite, not a patch.
 
 ### Local dev (one command)
 
@@ -79,103 +149,34 @@ gh repo create fantasy-grinder --public --source=. --push
 pwsh bin/dev.ps1         # Windows  |  ./bin/dev  # macOS/Linux
 ```
 
-### Offline demo (no backend)
-
-`frontend/react/dist/index.html` opens standalone — the optimizer, sample data, and recommendations work; ESPN sync shows a clear "backend not configured" state instead of failing silently.
+---
 
 ## Verified
 
-- **Backend**: 48 pytest passing (engine, parity vectors, integrations, API, injury/news feeds).
-- **Frontend**: 0 TypeScript errors, 13 vitest passing, 5s build, 215 KB gzipped.
-- **Optimizer**: NBA Classic maxProjection 385.0 on 30-player sample. MMA opponent-exclusion 264.0. Monte Carlo 20 unique lineups in 14–20ms.
-- **Recommendations**: cash (350% ROI), GPP (4150% at $3 entry), single-entry — all bankroll-capped, all sorted correctly.
+| | |
+|---|---|
+| **Frontend** | 0 TypeScript errors, 48 vitest tests passing, production build clean |
+| **Backend** | 42 pytest tests, run in CI on every push |
+| **Optimizer** | Exact brute-force optimum reproduced (134) over 148,318 legal NFL rosters; Monte Carlo returns 20 unique lineups in ~15–20 ms |
+| **Stacks** | 150/150 lineups held ≥4 LV@SF players under an LV@SF rule; 0/150 survived a changed rule |
+| **Exposure** | Exposure maths independently recounted against the same portfolio — exact |
+| **Deployment** | Every asset referenced by the live HTML hash-matched against the local build |
 
-## Deployment — one service, no vendor shopping
+---
 
-**Render for everything.** Frontend, backend, Postgres. The `render.yaml` Blueprint at the repo root creates all three with one click.
-
-```bash
-# 1. Push the repo to GitHub
-git init && git add . && git commit -m "init"
-gh repo create fantasy-grinder --public --source=. --push
-
-# 2. Render Dashboard → New Blueprint → select render.yaml
-#    Provisions:
-#      - fantasy-grinder-api (Django web service)
-#      - fantasy_grinder_db  (Postgres)
-
-# 3. Wait for the first deploy. Run migrations via Render shell:
-#      python manage.py migrate
-#      python manage.py load_sample_data
-
-# 4. Netlify: import the repo. Build command: cd frontend/react && npm install && npm run build
-#    Publish dir:   frontend/react/dist
-#    Env var:       VITE_API_URL=https://<your-render-service>.onrender.com
-```
-
-The customer gets `https://<your-site>.netlify.app` — a hosted web app with the in-browser optimizer, ESPN sync, and full database backend. No app downloads, no terminals.
-
-### Local dev (one command)
-
-```bash
-pwsh bin/dev.ps1         # Windows
-./bin/dev                # macOS / Linux
-```
-
-The script creates a venv, installs Python deps, builds the React app, runs migrations, seeds sample data, and starts Django on `:8000` with the React build served at `/`. Open <http://localhost:8000/>.
-
-## For the customer who wants offline / no-account
-
-`frontend/react/dist/index.html` — drag the `dist/` folder anywhere (Netlify Drop, S3, GitHub Pages, USB stick) and double-click `index.html`. The optimizer, sample data, CSV/Excel export, and recommendations all work without any backend. Only ESPN sync is offline-disabled (it needs the backend).
+## Repository layout
 
 ```
-C:\Users\D\Desktop\FantasyGrinder\        ← the deliverable
-  ├── index.html
-  ├── favicon.svg
-  ├── netlify.toml                       ← tells Netlify to serve as SPA
-  └── assets\
-      ├── index-*.js                     (in-browser optimizer + UI, 668 KB / 215 KB gz)
-      └── index-*.css
+frontend/react/            the app — this is what ships
+  src/optimizer/           solver, portfolio, stacks, worker
+  src/lib/espn-live.ts     live ESPN fetch + the modelled salary/projection/ownership layer
+  src/lib/data-provenance.ts   one place that says what is real and what is modelled
+  scripts/mavis-*.mjs      deploy, verify, layout-check tooling
+backend/django/            Django + Postgres service (CI-tested, not deployed)
+docs/wiki/                 the project wiki — see docs/wiki/mavis-index.md
+docs/architecture.md       system shape and data flow
 ```
 
-## Verified
-
-- **Optimizer**: NBA Classic maxProjection on 30-player sample: 8 slots, $40,500, 385.0 projection. NBA Monte Carlo (1000 sims): 20 unique lineups in 14–20ms.
-- **MMA**: opponent-exclusion correctly produces 264.0 with `allow_opponents=False` (1 per bout), 408.0 with `True` (all 6).
-- **Golf**: maxProjection on 12-player pool produces valid 6-golfer lineups under $50k.
-- **Recommendations**: Cash / GPP / Single-entry profiles tested via Node:
-  ```
-  $3 GPP, $30 bankroll → 3 picks, 4150% est. ROI, sorted by projection × leverage
-  $20 GPP, $100 bankroll → 5 picks, 2025% est. ROI
-  $5 Cash, $50 bankroll → 5 picks, 350% est. ROI, sorted by raw projection
-  ```
-  (ROI model is intentionally simple — real DK payout tables in v1.1.)
-- **Frontend build**: 5s, 215 KB gzipped, 0 TypeScript errors.
-- **Backend tests**: 42 pytest passing (engine + parity + integration + API).
-
-## Default strategy is Max Projection, not Monte Carlo
-
-We changed the default away from Monte Carlo. The original legacy default made first-time users wait ~30 seconds for a 10k-sim run that most of them didn't need.
-
-- **Default: Max Projection** — 1 MILP solve, ~10ms. Right answer for cash games and single-entry tournaments.
-- **Monte Carlo** is still selectable in the Strategy dropdown, now labeled "Monte Carlo (GPP)", and shows a banner explaining it's for tournament / multi-entry play where variance matters.
-- **Smart Recommendations** picks the right strategy per contest type at the lineup-selection step, not at the generate-lineups step — so the customer doesn't have to think about it.
-
-If the customer is a serious tournament player, they switch to Monte Carlo themselves. If they're new, they get a fast correct answer on first try.
-
-## What's in scope, what's not
-
-In scope:
-- 3 sports × 5 strategies
-- Player headshots (with multi-tier fallback: NBA CDN → initials)
-- CSV / XLSX export
-- ESPN injury + news sync
-- Odds API integration (server-side; needs `ODDS_API_KEY` env)
-- Smart recommendations
-- Late-swap import (NBA)
-- Postgres audit log
-
-Out of scope (v1):
-- Auth / per-user accounts (the customer is anonymous; per-device state via localStorage)
-- Real-money contest integration
-- Mobile native apps (this is web; the JS bundle is responsive)
+Artifacts created for this project carry the `mavis-` prefix and a descriptive subject
+(`mavis-deploy-cloudflare.mjs`, `mavis-fantasy-grinder-home-screen.png`, `docs/wiki/mavis-*.md`) so
+they are never mistaken for someone else's file.

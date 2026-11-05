@@ -1,6 +1,12 @@
 # Fantasy Grinder — Architecture (React + Django)
 
-System shape: React single-page app on Netlify talking to a Django REST API + Postgres on Render.
+Target system shape: React single-page app talking to a Django REST API + Postgres.
+
+> **What is live (2026-11-04):** the React SPA is on **Cloudflare Pages**
+> (<https://mavis-fantasy-grinder.pages.dev>) and runs **standalone** — the in-browser optimizer,
+> live ESPN data, no API calls to a backend. The Django + Postgres half below is in the repo and
+> CI-tested but **not deployed**. The diagram shows the target; the live deployment is the SPA box
+> alone, with ESPN's public API as its only network dependency.
 
 ## Why React (instead of keeping Flutter web)
 
@@ -18,7 +24,7 @@ System shape: React single-page app on Netlify talking to a Django REST API + Po
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  Customer browser (Netlify)                                     │
+│  Customer browser (Cloudflare Pages)                             │
 │  └── React SPA (Vite + TS + Tailwind + shadcn/ui)              │
 │      ├── Routes: /, /nba, /nba/admin, /mma, /golf              │
 │      ├── TanStack Query   → server state                       │
@@ -115,8 +121,8 @@ POST /api/optimize
 | `DATABASE_URL` | Render | Postgres connection string |
 | `DJANGO_SECRET_KEY` | Render | Django session signing |
 | `DJANGO_DEBUG` | Render | `0` in prod |
-| `DJANGO_ALLOWED_HOSTS` | Render | Netlify origin hostnames |
-| `CORS_ALLOWED_ORIGINS` | Render | Netlify URL |
+| `DJANGO_ALLOWED_HOSTS` | Render | The Pages origin hostname |
+| `CORS_ALLOWED_ORIGINS` | Render | The Pages URL |
 | `ODDS_API_KEY` | Render | The Odds API |
 | `ESPN_*` | Render | future — not in v1 |
 | `SUPABASE_MIGRATE_TOKEN` | Render (one-shot) | used by data migration script only |

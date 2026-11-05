@@ -23,8 +23,8 @@ export function exportLineupsCsv(lineups: Lineup[]): void {
   const headers = [
     "rank",
     "strategy",
-    "total_salary",
-    "total_projection",
+    "total_salary_est",
+    "total_projection_est",
     "total_ceiling",
     ...Array.from({ length: headerMax }, (_, i) => `slot${i + 1}`),
   ];
@@ -50,8 +50,8 @@ export function exportLineupsXlsx(lineups: Lineup[]): void {
   const headers = [
     "rank",
     "strategy",
-    "total_salary",
-    "total_projection",
+    "total_salary_est",
+    "total_projection_est",
     "total_ceiling",
     ...Array.from({ length: headerMax }, (_, i) => `slot${i + 1}`),
   ];

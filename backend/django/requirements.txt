@@ -14,7 +14,10 @@ pandas>=2.2
 openpyxl>=3.1
 
 # MILP
-pulp>=2.8
+# PuLP 4 is a Rust-backed rewrite whose LpVariable no longer takes
+# (name, cat="Binary"). The solver here is written against the 2.x API, so the
+# major version is pinned. Porting to PuLP 4 is a rewrite, not a patch.
+pulp>=2.8,<3
 ortools>=9.9
 
 # File I/O

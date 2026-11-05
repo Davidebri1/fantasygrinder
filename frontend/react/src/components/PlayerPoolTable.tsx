@@ -232,21 +232,21 @@ export function PlayerPoolTable({
     base.push(
       ch.accessor("salary", {
         id: "salary",
-        header: "Salary",
+        header: "Salary (est.)",
         cell: (i) => (
           <span className="tabular-nums">{fmtMoney(i.getValue<number>())}</span>
         ),
       }) as ColumnDef<Player, unknown>,
       ch.accessor("projection", {
         id: "projection",
-        header: "Proj",
+        header: "Proj (est.)",
         cell: (i) => (
           <span className="tabular-nums">{fmtDecimal(i.getValue<number>())}</span>
         ),
       }) as ColumnDef<Player, unknown>,
       ch.accessor((r: Player) => r.projected_ownership ?? 0, {
         id: "ownership",
-        header: "Own %",
+        header: "Own % (est.)",
         cell: (i) => (
           <span className="tabular-nums text-ink-muted">
             {fmtDecimal(i.getValue<number>())}
