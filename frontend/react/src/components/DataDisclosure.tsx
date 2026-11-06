@@ -32,13 +32,24 @@ export function SampleDataBanner({ className = "" }: { className?: string }) {
   );
 }
 
-export function EstimateNotice({ className = "" }: { className?: string }) {
+export function EstimateNotice({
+  className = "",
+  mode = "estimate",
+}: {
+  className?: string;
+  /** "estimate" = ESPN pool, modelled numbers; "dk" = a real DraftKings slate. */
+  mode?: "estimate" | "dk";
+}) {
+  const text =
+    mode === "dk"
+      ? "Salaries and projections on this slate are DraftKings' own published numbers. Ownership is modelled."
+      : ESTIMATE_NOTICE;
   return (
     <p
       className={`flex items-start gap-2 text-[11px] leading-relaxed text-ink-subtle ${className}`}
     >
       <Info size={12} className="mt-0.5 shrink-0" aria-hidden />
-      <span>{ESTIMATE_NOTICE}</span>
+      <span>{text}</span>
     </p>
   );
 }

@@ -30,7 +30,7 @@ import {
 
 import { Player, type Sport } from "@/types";
 import { useAppStore } from "@/store";
-import { poolHasRealSalaries } from "@/lib/real-salaries";
+import { salaryDisplay } from "@/lib/real-salaries";
 import { cn, fmtMoney, fmtDecimal } from "@/lib/utils";
 import type { PoolFilter } from "@/hooks/usePlayerFilters";
 import { PlayerChip } from "./PlayerChip";
@@ -96,10 +96,14 @@ export function PlayerPoolTable({
     { id: "projection", desc: true },
   ]);
 
-  // The Salary column only exists when the pool carries real salaries (a
-  // DraftKings import). Live ESPN data publishes no salaries, so the
-  // column is left out rather than filled with invented prices.
-  const hasRealSalaries = useMemo(() => poolHasRealSalaries(players), [players]);
+  // Every salary shows, and every salary says where it came from: a real
+  // DraftKings price shows bare; an estimate carries its "(est.)" tag so the
+  // column is always informative and never misleading.
+  const salaryBySource = useMemo(() => {
+    const map = new Map<string, { text: string; estimate: boolean }>();
+    for (const p of players) map.set(p.id, salaryDisplay(p));
+    return map;
+  }, [players]);
 
   const openable = !!onRowClick || !!onPlayerClick;
   const activate = (player: Player) => {
@@ -253,17 +257,24 @@ export function PlayerPoolTable({
     }
 
     // ── The numbers ───────────────────────────────────────────────────
-    if (hasRealSalaries) {
-      base.push(
-        ch.accessor("salary", {
-          id: "salary",
-          header: "Salary",
-          cell: (i) => (
-            <span className="tabular-nums">{fmtMoney(i.getValue<number>())}</span>
-          ),
-        }) as ColumnDef<Player, unknown>,
-      );
-    }
+    base.push(
+      ch.accessor("salary", {
+        id: "salary",
+        header: "Salary",
+        cell: (i) => {
+          const d = salaryBySource.get(i.row.original.id) ?? {
+            text: fmtMoney(i.getValue<number>()),
+            estimate: true,
+          };
+          return (
+            <span className="tabular-nums">
+              {d.text}
+              {d.estimate && <span className="text-ink-subtle"> (est.)</span>}
+            </span>
+          );
+        },
+      }) as ColumnDef<Player, unknown>,
+    );
     base.push(
       ch.accessor("projection", {
         id: "projection",
@@ -334,7 +345,7 @@ export function PlayerPoolTable({
       }) as ColumnDef<Player, unknown>,
     );
     return base;
-  }, [sport, updatePlayer, onFilterChange, filter, players, hasRealSalaries]);
+  }, [sport, updatePlayer, onFilterChange, filter, players, salaryBySource]);
 
   const table = useReactTable({
     data: players,

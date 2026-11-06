@@ -35,7 +35,6 @@ import {
 
 import { useAppStore } from "@/store";
 import { runOptimizerAsync } from "@/lib/run-optimizer";
-import { poolHasRealSalaries } from "@/lib/real-salaries";
 import { exportLineupsCsv, exportLineupsXlsx } from "@/lib/export-client";
 import { cn, fmtDecimal, fmtMoney } from "@/lib/utils";
 import {
@@ -150,11 +149,6 @@ export function SportOptimizerScreen({ sport }: { sport: Sport }) {
   const setLastResult = useAppStore((s) => s.setLastResult);
   const clearLineups = useAppStore((s) => s.clearLineups);
 
-  // The optimizer balances a salary cap, so it means nothing without real
-  // salaries. They only come from a DraftKings import; live ESPN data has
-  // none.
-  const poolHasReal = useMemo(() => poolHasRealSalaries(players), [players]);
-
   // Reset settings when the sport changes (shared component across routes).
   useEffect(() => {
     setSettings(defaultUiSettings(sport));
@@ -168,10 +162,15 @@ export function SportOptimizerScreen({ sport }: { sport: Sport }) {
   // replaces an imported pool, because that is an explicit act.
   useEffect(() => {
     let cancelled = false;
-    void loadLive(sport);
+    // The bundled DraftKings slate IS the pool until the customer acts —
+    // an automatic ESPN pull would replace real prices with estimates.
+    if (useAppStore.getState().rosterSource[sport] !== "dk") {
+      void loadLive(sport);
+    }
     const timer = setInterval(() => {
       if (cancelled) return;
-      if (useAppStore.getState().rosterSource[sport] === "imported") return;
+      const src = useAppStore.getState().rosterSource[sport];
+      if (src === "imported" || src === "dk") return;
       void loadLive(sport);
     }, 5 * 60 * 1000);
     return () => {
@@ -190,7 +189,7 @@ export function SportOptimizerScreen({ sport }: { sport: Sport }) {
    */
   const run = useCallback(
     (override?: Partial<OptimizerUiSettings>) => {
-      if (players.length === 0 || !poolHasReal) return;
+      if (players.length === 0) return;
       const s = override ? { ...settings, ...override } : settings;
       setRunning(true);
       setRunError(null);
@@ -231,7 +230,7 @@ export function SportOptimizerScreen({ sport }: { sport: Sport }) {
       })
       .finally(() => setRunning(false));
     },
-    [players, poolHasReal, sport, settings, setLastResult],
+    [players, sport, settings, setLastResult],
   );
 
   /**
@@ -243,7 +242,7 @@ export function SportOptimizerScreen({ sport }: { sport: Sport }) {
   const builtKey = useRef<string | null>(null);
   useEffect(() => {
     if (players.length === 0) return;
-    const key = `${sport}:${lastSyncedAt ?? "sample"}:${poolHasReal}`;
+    const key = `${sport}:${lastSyncedAt ?? "sample"}:${players.length}`;
     if (builtKey.current === key) return;
     builtKey.current = key;
     run();
@@ -389,7 +388,9 @@ export function SportOptimizerScreen({ sport }: { sport: Sport }) {
   }, [lineups, rotoContext]);
 
   const statusLine =
-    rosterSource === "imported"
+    rosterSource === "dk"
+      ? `DraftKings slate loaded · JAX @ BAL · real salaries, DK's own projections — Refresh pulls ESPN live`
+      : rosterSource === "imported"
       ? `Imported roster · ${players.length} players — your file's salaries are in use; background refresh paused`
       : liveStatus === "live"
       ? `Live from ESPN · ${players.length} players · ${liveGames.length} ${
@@ -530,7 +531,7 @@ export function SportOptimizerScreen({ sport }: { sport: Sport }) {
         </ul>
       )}
 
-      <EstimateNotice />
+      <EstimateNotice mode={rosterSource === "dk" || rosterSource === "imported" ? "dk" : "estimate"} />
 
       {runError && (
         <p className="well p-3 label text-danger">The build failed: {runError}</p>
@@ -551,22 +552,15 @@ export function SportOptimizerScreen({ sport }: { sport: Sport }) {
             <button
               type="button"
               onClick={() => run()}
-              disabled={running || players.length === 0 || !poolHasReal}
+              disabled={running || players.length === 0}
               className="action w-full mt-4 flex items-center justify-center gap-2 h-10 text-sm"
             >
               <PlayCircle className="w-4 h-4" />
               {running ? "Building…" : "Build portfolio"}
             </button>
-            {!poolHasReal ? (
-              <p className="label mt-2.5 text-warn">
-                Import a DraftKings file first — the optimizer balances real
-                salaries, and none are loaded yet.
-              </p>
-            ) : (
-              <p className="label-quiet mt-2.5">
-                The portfolio rebuilds itself whenever the slate changes.
-              </p>
-            )}
+            <p className="label-quiet mt-2.5">
+              The portfolio rebuilds itself whenever the slate changes.
+            </p>
             {settings.stack_rules.length > 0 && (
               <div className="mt-3 flex items-center gap-2">
                 <span className="chip chip-good">

@@ -17,6 +17,8 @@ import {
   type Sport,
 } from "@/types";
 import { fetchLivePool, type LiveGame } from "@/lib/espn-live";
+import { parseDraftables } from "@/lib/dk-draftables";
+import dkShowdownJaxBal from "@/assets/dk-showdown-jax-bal.json";
 import {
   buildGolfSample,
   buildMmaSample,
@@ -26,6 +28,18 @@ import {
 } from "@/optimizer/sample";
 import { seedHeadshotCache, prefetchHeadshots } from "@/components/PlayerAvatar";
 import type { Player as EnginePlayer } from "@/optimizer";
+
+/**
+ * The bundled DraftKings slate — real published prices and DK's own
+ * projections. It seeds the NFL pool so the app is usable the moment it
+ * opens, before any import. A live ESPN pull or a customer import replaces
+ * it; auto-refresh leaves it alone (it would overwrite real prices with
+ * estimates).
+ */
+const DK_SEED_NFL: Player[] = parseDraftables(
+  JSON.stringify(dkShowdownJaxBal),
+  "nfl",
+).map((p) => ({ ...p, salary_source: "dk" as const }));
 
 /** Engine-shape player → wire-shape player (snake_case) with photo kept. */
 function toWire(p: EnginePlayer): Player {
@@ -63,7 +77,7 @@ export type LiveStatus = "idle" | "loading" | "live" | "empty" | "offline";
  * slate. The UI must say so loudly — a customer who enters a lineup built from
  * sample data has been told a lie by the product.
  */
-export type RosterSource = "live" | "sample" | "imported";
+export type RosterSource = "live" | "sample" | "imported" | "dk";
 
 interface AppState {
   // Working set
@@ -103,7 +117,7 @@ interface AppState {
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
-      players: { nba: [], nfl: [], mma: [], golf: [] },
+      players: { nba: [], nfl: DK_SEED_NFL, mma: [], golf: [] },
       setPlayers: (sport, players) =>
         set((s) => ({
           players: { ...s.players, [sport]: players },
@@ -153,7 +167,7 @@ export const useAppStore = create<AppState>()(
       },
 
       liveStatus: {},
-      rosterSource: {},
+      rosterSource: { nfl: "dk" },
       liveGames: {},
       liveWarnings: {},
       lastSyncedAt: {},
@@ -223,7 +237,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "fantasy-grinder-app",
-      version: 4,
+      version: 5,
       partialize: (s) => ({
         players: s.players,
         nbaSettings: s.nbaSettings,
@@ -233,8 +247,9 @@ export const useAppStore = create<AppState>()(
       // persisted rosters so every visitor regenerates the new pools.
       // v3 → v4: NFL added; drop persisted rosters again so the live slate
       // is always the source of truth.
+      // v4 → v5: the NFL pool starts from the bundled DraftKings slate.
       migrate: (persisted: unknown, version: number) => {
-        if (version < 4) {
+        if (version < 5) {
           return {
             players: { nba: [], nfl: [], mma: [], golf: [] },
             nbaSettings: {

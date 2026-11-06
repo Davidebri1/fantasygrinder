@@ -328,7 +328,7 @@ export function PlayerDrawer({
         {/* Facts */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-            {player.salary > 0 && <Fact label="Salary" value={fmtMoney(player.salary)} />}
+            <Fact label={player.salary_source === "dk" ? "Salary" : "Salary (est.)"} value={fmtMoney(player.salary)} />
             <Fact
               label="Projected points (est.)"
               value={fmtDecimal(player.projection)}

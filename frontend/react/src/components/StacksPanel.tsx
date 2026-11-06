@@ -200,7 +200,7 @@ export function StacksPanel({
 
                       <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
                         <div className="flex gap-1.5">
-                          <dt className="label-quiet">{stack.salary > 0 ? "Salary" : "Salary — import a DraftKings file for real prices"}</dt>
+                          <dt className="label-quiet">Salary (est.)</dt>
                           <dd className="num text-ink">{fmtMoney(stack.salary)}</dd>
                         </div>
                         <div className="flex gap-1.5">

@@ -17,7 +17,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, ChevronUp, Copy, Lock, Unlock } from "lucide-react";
 
 import { cn, fmtDecimal, fmtMoney } from "@/lib/utils";
-import { poolHasRealSalaries } from "@/lib/real-salaries";
+import { salaryIsReal } from "@/lib/real-salaries";
 import { PlayerChip } from "./PlayerChip";
 import { TeamCrest } from "./TeamCrest";
 import type { Lineup, Player, Sport } from "@/types";
@@ -63,12 +63,18 @@ export function lineupRst(lineup: Lineup, ctx: RotoContext): number {
  * message, so it reads as sentences rather than as a table.
  */
 export function lineupText(lineup: Lineup, ctx: RotoContext): string {
-  // Salary only appears in the copy when the pool has real salaries.
-  const hasRealSalaries = poolHasRealSalaries([...ctx.byId.values()]);
+  // Every salary shows. The label says where the prices came from: a
+  // DraftKings import is real; anything else is the published estimate.
+  const poolPlayers = [...ctx.byId.values()];
+  const hasRealSalaries = poolPlayers.length > 0 && poolPlayers.every(salaryIsReal);
   const lines: string[] = [
     `Fantasy Grinder — Lineup #${lineup.rank}`,
     `Projected: ${fmtDecimal(lineup.total_projection)} points`,
-    ...(hasRealSalaries ? [`Salary: ${fmtMoney(lineup.total_salary)}`] : []),
+    ...(poolPlayers.length > 0
+      ? [hasRealSalaries
+          ? `Salary: ${fmtMoney(lineup.total_salary)}`
+          : `Salary (est.): ${fmtMoney(lineup.total_salary)}`]
+      : []),
     `Roto Score: ${fmtDecimal(lineupRst(lineup, ctx))}%`,
     "",
   ];
@@ -81,7 +87,7 @@ export function lineupText(lineup: Lineup, ctx: RotoContext): string {
     lines.push(
       hasRealSalaries
         ? `${a.slot} — ${a.player_name}${opponent} — ${salary} — ${points} points — Roto Score ${rst}%`
-        : `${a.slot} — ${a.player_name}${opponent} — ${points} points — Roto Score ${rst}%`,
+        : `${a.slot} — ${a.player_name}${opponent} — ${salary} (est.) — ${points} points — Roto Score ${rst}%`,
     );
   }
   return lines.join("\n");
@@ -195,7 +201,7 @@ export function RotoLineupCard({
   // import. The context's byId map IS the pool, so this works wherever the
   // card renders — no extra prop to thread through.
   const hasRealSalaries = useMemo(
-    () => poolHasRealSalaries([...ctx.byId.values()]),
+    () => ctx.byId.size > 0 && [...ctx.byId.values()].every(salaryIsReal),
     [ctx.byId],
   );
 
@@ -216,13 +222,17 @@ export function RotoLineupCard({
         <div
           className={cn(
             "flex-1 grid divide-x divide-line bg-surface-2",
-            hasRealSalaries ? "grid-cols-3" : "grid-cols-2",
+            "grid-cols-3",
           )}
         >
-          <HeaderStat label="Projected (est.)" value={fmtDecimal(lineup.total_projection)} />
-          {hasRealSalaries && (
-            <HeaderStat label="Salary" value={fmtMoney(lineup.total_salary)} />
-          )}
+          <HeaderStat
+            label={hasRealSalaries ? "Projected" : "Projected (est.)"}
+            value={fmtDecimal(lineup.total_projection)}
+          />
+          <HeaderStat
+            label={hasRealSalaries ? "Salary" : "Salary (est.)"}
+            value={fmtMoney(lineup.total_salary)}
+          />
           <HeaderStat label="Roto Score" value={`${fmtDecimal(rst)}%`} accent />
         </div>
       </header>
@@ -233,10 +243,12 @@ export function RotoLineupCard({
             <th className="label text-left font-normal px-3 py-1.5">Player</th>
             <th className="label text-left font-normal px-2 py-1.5">Team</th>
             <th className="label text-left font-normal px-2 py-1.5">Opp</th>
-            {hasRealSalaries && (
-              <th className="label text-right font-normal px-2 py-1.5">Salary</th>
-            )}
-            <th className="label text-right font-normal px-2 py-1.5">Pts (est.)</th>
+            <th className="label text-right font-normal px-2 py-1.5">
+              {hasRealSalaries ? "Salary" : "Salary (est.)"}
+            </th>
+            <th className="label text-right font-normal px-2 py-1.5">
+              {hasRealSalaries ? "Pts" : "Pts (est.)"}
+            </th>
             <th className="label text-right font-normal px-3 py-1.5">Roto Score</th>
             <th className="label text-right font-normal px-3 py-1.5">Exposure</th>
           </tr>

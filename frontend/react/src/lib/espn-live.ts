@@ -282,6 +282,50 @@ export function dkFantasyPoints(s: PlayerStats): number {
   return base + doubleDouble + tripleDouble;
 }
 
+/**
+ * Salaries when no DraftKings price exists.
+ *
+ * These are ESTIMATES produced by a published formula so the optimizer has a
+ * cap to balance before a DraftKings slate is imported. The UI tags them
+ * "(est.)" at every site, and a real DraftKings import replaces them outright.
+ */
+/**
+ * Salary derived from projection.
+ * DraftKings does not publish its salaries; this reproduces the shape of a
+ * DK salary list (3.5k-11.5k, ~150 dollars per projected point) so that
+ * salary-cap constraints behave the way a DFS player expects.
+ */
+export function derivedSalary(projection: number): number {
+  const raw = projection * 150 + 800;
+  const snapped = Math.round(raw / 100) * 100;
+  return Math.min(11_500, Math.max(3_000, snapped));
+}
+
+/**
+ * Salary derived from projection, shaped like a real DraftKings NFL salary
+ * list: quarterbacks cost more per projected point and have a higher floor,
+ * and a defense sits at the bottom of the range.
+ */
+const NFL_SALARY_BANDS: Record<
+  string,
+  { rate: number; base: number; floor: number; cap: number }
+> = {
+  QB: { rate: 320, base: 1_800, floor: 4_500, cap: 9_500 },
+  RB: { rate: 380, base: 1_400, floor: 3_000, cap: 9_000 },
+  FB: { rate: 380, base: 1_400, floor: 3_000, cap: 9_000 },
+  WR: { rate: 380, base: 1_500, floor: 3_000, cap: 9_000 },
+  TE: { rate: 380, base: 1_100, floor: 2_500, cap: 6_500 },
+  DST: { rate: 420, base: 700, floor: 2_000, cap: 4_500 },
+};
+
+function derivedNflSalary(projection: number, position: string): number {
+  const band =
+    NFL_SALARY_BANDS[position] ?? NFL_SALARY_BANDS.RB;
+  const raw = projection * band.rate + band.base;
+  const snapped = Math.round(raw / 100) * 100;
+  return Math.min(band.cap, Math.max(band.floor, snapped));
+}
+
 /** Baseline stat line for a player ESPN has no season stats for (rookies). */
 function baselineStats(position: string): PlayerStats {
   const table: Record<string, PlayerStats> = {
@@ -601,7 +645,7 @@ async function fetchLiveNbaPool(): Promise<LivePool> {
           id: `nba-${espnId}`,
           name,
           sport: "nba",
-          salary: 0, // ESPN publishes no salaries — real ones come from a DraftKings import.
+          salary: derivedSalary(projection),
           projection: Math.round(projection * 10) / 10,
           team: teamAbbr,
           opponent: opponentAbbr,
@@ -775,7 +819,7 @@ async function fetchLiveMmaPool(): Promise<LivePool> {
         id: `mma-${espnId}`,
         name,
         sport: "mma",
-        salary: 0,
+        salary: derivedSalary(projection),
         projection: Math.round(projection * 10) / 10,
         opponent,
         bout: `${names[0] ?? ""} vs ${names[1] ?? ""}`,
@@ -884,7 +928,7 @@ async function fetchLiveGolfPool(): Promise<LivePool> {
       id: `golf-${g.id}`,
       name: g.name,
       sport: "golf",
-      salary: 0,
+      salary: derivedSalary(projection),
       projection: Math.round(projection * 10) / 10,
       game_info: tournament,
       game_time: ev.date ?? null,
@@ -1158,7 +1202,7 @@ async function fetchLiveNflPool(): Promise<LivePool> {
           id: `nfl-${espnId}`,
           name: athlete.displayName ?? espnId,
           sport: "nfl",
-          salary: 0,
+          salary: derivedNflSalary(projection, pos),
           projection: Math.round(projection * 10) / 10,
           team: teamAbbr,
           opponent: opponentAbbr,
@@ -1179,7 +1223,7 @@ async function fetchLiveNflPool(): Promise<LivePool> {
         id: `nfl-dst-${side.team.id}`,
         name: `${teamAbbr} Defense`,
         sport: "nfl",
-        salary: 0,
+        salary: derivedNflSalary(dstProjection, "DST"),
         projection: Math.round(dstProjection * 10) / 10,
         team: teamAbbr,
         opponent: opponentAbbr,

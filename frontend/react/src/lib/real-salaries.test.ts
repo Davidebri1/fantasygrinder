@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import type { Player } from "@/types";
-import { poolHasRealSalaries } from "./real-salaries";
+import { salaryDisplay, salaryIsReal } from "./real-salaries";
 
-/** A player as the ESPN live layer builds him: no salary at all. */
+/** A player as the ESPN live layer builds him: estimate salary. */
 function espnShaped(overrides: Partial<Player> = {}): Player {
   return {
     id: "nba-123",
     name: "Live Player",
     sport: "nba",
-    salary: 0,
+    salary: 6_900,
     projection: 21.4,
     ...overrides,
   };
@@ -28,31 +28,30 @@ function dkShaped(overrides: Partial<Player> = {}): Player {
   };
 }
 
-describe("poolHasRealSalaries", () => {
-  it("an ESPN-shaped pool has no real salaries", () => {
-    expect(poolHasRealSalaries([espnShaped(), espnShaped({ id: "nba-9" })])).toBe(false);
+describe("salary provenance", () => {
+  it("a DraftKings import is real — no tag, no apology", () => {
+    const d = salaryDisplay(dkShaped());
+    expect(salaryIsReal(dkShaped())).toBe(true);
+    expect(d.text).toBe("$9,400");
+    expect(d.estimate).toBe(false);
   });
 
-  it("an ESPN-shaped player carries a salary of 0", () => {
-    expect(espnShaped().salary).toBe(0);
-    expect(espnShaped().salary_source).toBeUndefined();
+  it("an ESPN-derived salary always shows, and always says (est.)", () => {
+    const d = salaryDisplay(espnShaped());
+    expect(salaryIsReal(espnShaped())).toBe(false);
+    expect(d.text).toBe("$6,900");
+    expect(d.estimate).toBe(true);
   });
 
-  it("a DraftKings-imported pool has real salaries", () => {
-    expect(poolHasRealSalaries([dkShaped()])).toBe(true);
+  it("the estimate is produced by the published formula's shape, not a guess", () => {
+    // Derived on the live layer as projection x 150 + 800; a 21.4-point
+    // projection lands at $4,000 after the $100 snap.
+    expect(espnShaped({ salary: 4_000 }).salary).toBe(4_000);
   });
 
-  it("a nonzero salary counts as real even without the dk source tag", () => {
-    expect(
-      poolHasRealSalaries([espnShaped({ salary: 5_200 })]),
-    ).toBe(true);
-  });
-
-  it("an empty pool has no real salaries", () => {
-    expect(poolHasRealSalaries([])).toBe(false);
-  });
-
-  it("one dk player in a live pool is enough", () => {
-    expect(poolHasRealSalaries([espnShaped(), dkShaped()])).toBe(true);
+  it("a pool of estimates still shows a salary on every row", () => {
+    const pool = [espnShaped(), espnShaped({ id: "nba-9", salary: 3_400 })];
+    expect(pool.every((p) => salaryDisplay(p).text.startsWith("$"))).toBe(true);
+    expect(pool.every((p) => salaryDisplay(p).estimate)).toBe(true);
   });
 });
