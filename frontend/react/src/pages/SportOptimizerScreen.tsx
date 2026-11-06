@@ -35,6 +35,7 @@ import {
 
 import { useAppStore } from "@/store";
 import { runOptimizerAsync } from "@/lib/run-optimizer";
+import { poolHasRealSalaries } from "@/lib/real-salaries";
 import { exportLineupsCsv, exportLineupsXlsx } from "@/lib/export-client";
 import { cn, fmtDecimal, fmtMoney } from "@/lib/utils";
 import {
@@ -149,6 +150,11 @@ export function SportOptimizerScreen({ sport }: { sport: Sport }) {
   const setLastResult = useAppStore((s) => s.setLastResult);
   const clearLineups = useAppStore((s) => s.clearLineups);
 
+  // The optimizer balances a salary cap, so it means nothing without real
+  // salaries. They only come from a DraftKings import; live ESPN data has
+  // none.
+  const poolHasReal = useMemo(() => poolHasRealSalaries(players), [players]);
+
   // Reset settings when the sport changes (shared component across routes).
   useEffect(() => {
     setSettings(defaultUiSettings(sport));
@@ -184,7 +190,7 @@ export function SportOptimizerScreen({ sport }: { sport: Sport }) {
    */
   const run = useCallback(
     (override?: Partial<OptimizerUiSettings>) => {
-      if (players.length === 0) return;
+      if (players.length === 0 || !poolHasReal) return;
       const s = override ? { ...settings, ...override } : settings;
       setRunning(true);
       setRunError(null);
@@ -225,7 +231,7 @@ export function SportOptimizerScreen({ sport }: { sport: Sport }) {
       })
       .finally(() => setRunning(false));
     },
-    [players, sport, settings, setLastResult],
+    [players, poolHasReal, sport, settings, setLastResult],
   );
 
   /**
@@ -237,7 +243,7 @@ export function SportOptimizerScreen({ sport }: { sport: Sport }) {
   const builtKey = useRef<string | null>(null);
   useEffect(() => {
     if (players.length === 0) return;
-    const key = `${sport}:${lastSyncedAt ?? "sample"}`;
+    const key = `${sport}:${lastSyncedAt ?? "sample"}:${poolHasReal}`;
     if (builtKey.current === key) return;
     builtKey.current = key;
     run();
@@ -545,15 +551,22 @@ export function SportOptimizerScreen({ sport }: { sport: Sport }) {
             <button
               type="button"
               onClick={() => run()}
-              disabled={running || players.length === 0}
+              disabled={running || players.length === 0 || !poolHasReal}
               className="action w-full mt-4 flex items-center justify-center gap-2 h-10 text-sm"
             >
               <PlayCircle className="w-4 h-4" />
               {running ? "Building…" : "Build portfolio"}
             </button>
-            <p className="label-quiet mt-2.5">
-              The portfolio rebuilds itself whenever the slate changes.
-            </p>
+            {!poolHasReal ? (
+              <p className="label mt-2.5 text-warn">
+                Import a DraftKings file first — the optimizer balances real
+                salaries, and none are loaded yet.
+              </p>
+            ) : (
+              <p className="label-quiet mt-2.5">
+                The portfolio rebuilds itself whenever the slate changes.
+              </p>
+            )}
             {settings.stack_rules.length > 0 && (
               <div className="mt-3 flex items-center gap-2">
                 <span className="chip chip-good">

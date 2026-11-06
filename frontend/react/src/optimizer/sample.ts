@@ -57,7 +57,6 @@ const NBA_HEADSHOT_URLS: Record<string, string> = {
   "De'Anthony Melton": "https://a.espncdn.com/i/headshots/nba/players/full/4066436.png",
 };
 
-const NBA_SALARY_BUCKETS = [3500, 4000, 4500, 5000, 5500, 6000, 7000, 8500, 10500];
 const NBA_POSITIONS = ["PG", "SG", "SF", "PF", "C"];
 
 function rosterPositionsFor(pos: string): string[] {
@@ -80,7 +79,7 @@ export function buildNbaSample(): Player[] {
         id: `nba-${idx}-${offset}`,
         name: names[offset],
         sport: "nba",
-        salary: NBA_SALARY_BUCKETS[Math.floor(rand() * NBA_SALARY_BUCKETS.length)],
+        salary: 0, // no fabricated prices — real salaries come from a DraftKings import
         projection: Math.round(15 + rand() * 45),
         team,
         opponent,
@@ -114,7 +113,6 @@ const MMA_FIGHTERS: Array<[string, string, string]> = [
   ["Amanda Nunes", "Kayla Harrison", "Women's Bantamweight"],
   ["Valentina Shevchenko", "Alexa Grasso", "Women's Flyweight"],
 ];
-const MMA_SALARY_BUCKETS = [4500, 5500, 6500, 7500, 8500, 9500];
 
 // ESPN CDN headshots — confirmed by athlete id for each fighter.
 const MMA_HEADSHOT_URLS: Record<string, string> = {
@@ -161,7 +159,7 @@ export function buildMmaSample(): Player[] {
       id: `mma-${i}-0`,
       name: a,
       sport: "mma",
-      salary: MMA_SALARY_BUCKETS[Math.floor(rand() * MMA_SALARY_BUCKETS.length)],
+      salary: 0,
       projection: Math.round(40 + rand() * 50),
       opponentId: `mma-${i}-1`,
       bout: `${a} vs ${b}`,
@@ -172,7 +170,7 @@ export function buildMmaSample(): Player[] {
       id: `mma-${i}-1`,
       name: b,
       sport: "mma",
-      salary: MMA_SALARY_BUCKETS[Math.floor(rand() * MMA_SALARY_BUCKETS.length)],
+      salary: 0,
       projection: Math.round(40 + rand() * 50),
       opponentId: `mma-${i}-0`,
       bout: `${a} vs ${b}`,
@@ -194,7 +192,6 @@ const GOLF_PLAYERS = [
   "Corey Conners", "Si Woo Kim", "Jason Day", "Adam Scott",
   "Sahith Theegala", "Max Homa", "Cameron Young", "Hideki Matsuyama",
 ];
-const GOLF_SALARY_BUCKETS = [6500, 7000, 7500, 8000, 8500, 9000, 10000, 11000];
 
 // ESPN CDN headshots — confirmed by athlete id for each golfer.
 const GOLF_HEADSHOT_URLS: Record<string, string> = {
@@ -238,7 +235,7 @@ export function buildGolfSample(): Player[] {
     id: `golf-${i}`,
     name,
     sport: "golf",
-    salary: GOLF_SALARY_BUCKETS[Math.floor(rand() * GOLF_SALARY_BUCKETS.length)],
+    salary: 0,
     projection: Math.round(45 + rand() * 50),
     projectedOwnership: Math.round(2 + rand() * 28),
     photoUrl: GOLF_HEADSHOT_URLS[name],
@@ -310,12 +307,6 @@ const NFL_GAMES: Array<[string, string, Array<[string, string]>]> = [
 export function buildNflSample(): Player[] {
   const rand = rng(PROJECTIONS_SEED + 7);
   const out: Player[] = [];
-  const salaryByPos: Record<string, number> = {
-    QB: 7200,
-    RB: 5400,
-    WR: 4800,
-    TE: 3600,
-  };
   const baseByPos: Record<string, number> = {
     QB: 22,
     RB: 16,
@@ -327,15 +318,11 @@ export function buildNflSample(): Player[] {
     const gameKey = `${away}@${home}`;
     players.forEach(([name, pos], i) => {
       const projection = Math.round(baseByPos[pos] + rand() * baseByPos[pos] * 1.6);
-      const salary = Math.min(
-        9_500,
-        Math.max(2_800, Math.round(((salaryByPos[pos] + (rand() - 0.5) * 1_800) / 100) * 100)),
-      );
       out.push({
         id: `nfl-sample-${gameIdx}-${i}`,
         name,
         sport: "nfl",
-        salary,
+        salary: 0,
         projection,
         team: i % 2 === 0 ? away : home,
         opponent: i % 2 === 0 ? home : away,
@@ -356,7 +343,7 @@ export function buildNflSample(): Player[] {
         id: `nfl-sample-dst-${gameIdx}-${k}`,
         name: `${team} Defense`,
         sport: "nfl",
-        salary: Math.round((2_000 + rand() * 2_000) / 100) * 100,
+        salary: 0,
         projection,
         team,
         opponent,

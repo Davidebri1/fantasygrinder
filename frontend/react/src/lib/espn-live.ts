@@ -19,10 +19,9 @@
  *          position in the tournament.
  *
  * Two honest caveats, both surfaced in the UI:
- *   1. DraftKings salaries are not published anywhere public. The salaries
- *      here are derived from each player's projection using DK's typical
- *      points-per-dollar ratio, so lineup building works, but they are not
- *      DK's official numbers.
+ *   1. DraftKings salaries are not published anywhere public and ESPN
+ *      publishes none either, so live players carry no salary at all.
+ *      Real salaries arrive with a DraftKings draftables import.
  *   2. ESPN publishes NBA positions as Guard / Forward / Center only. The
  *      fine-grained PG/SG/SF/PF labels are derived per team from the
  *      season stat line (a guard's assist rate decides PG vs SG, a
@@ -281,18 +280,6 @@ export function dkFantasyPoints(s: PlayerStats): number {
   const doubleDouble = s.reb >= 10 && s.ast >= 5 ? 1.5 : 0;
   const tripleDouble = s.pts >= 25 && s.reb >= 10 && s.ast >= 5 ? 3.0 : 0;
   return base + doubleDouble + tripleDouble;
-}
-
-/**
- * Salary derived from projection.
- * DraftKings does not publish its salaries; this reproduces the shape of a
- * DK salary list (3.5k-11.5k, ~150 dollars per projected point) so that
- * salary-cap constraints behave the way a DFS player expects.
- */
-export function derivedSalary(projection: number): number {
-  const raw = projection * 150 + 800;
-  const snapped = Math.round(raw / 100) * 100;
-  return Math.min(11_500, Math.max(3_000, snapped));
 }
 
 /** Baseline stat line for a player ESPN has no season stats for (rookies). */
@@ -614,7 +601,7 @@ async function fetchLiveNbaPool(): Promise<LivePool> {
           id: `nba-${espnId}`,
           name,
           sport: "nba",
-          salary: derivedSalary(projection),
+          salary: 0, // ESPN publishes no salaries — real ones come from a DraftKings import.
           projection: Math.round(projection * 10) / 10,
           team: teamAbbr,
           opponent: opponentAbbr,
@@ -788,10 +775,7 @@ async function fetchLiveMmaPool(): Promise<LivePool> {
         id: `mma-${espnId}`,
         name,
         sport: "mma",
-        salary: Math.min(
-          11_000,
-          Math.max(4_000, Math.round((projection * 380) / 100) * 100),
-        ),
+        salary: 0,
         projection: Math.round(projection * 10) / 10,
         opponent,
         bout: `${names[0] ?? ""} vs ${names[1] ?? ""}`,
@@ -900,7 +884,7 @@ async function fetchLiveGolfPool(): Promise<LivePool> {
       id: `golf-${g.id}`,
       name: g.name,
       sport: "golf",
-      salary: Math.min(12_000, Math.max(4_000, Math.round((projection * 170) / 100) * 100)),
+      salary: 0,
       projection: Math.round(projection * 10) / 10,
       game_info: tournament,
       game_time: ev.date ?? null,
@@ -997,31 +981,6 @@ function dkNflPoints(stats: Map<string, number>): number {
     g("receivingTouchdowns") * 6 -
     g("fumblesLost") * 1
   );
-}
-
-/**
- * Salary derived from projection, shaped like a real DraftKings NFL salary
- * list: quarterbacks cost more per projected point and have a higher floor,
- * and a defense sits at the bottom of the range.
- */
-const NFL_SALARY_BANDS: Record<
-  string,
-  { rate: number; base: number; floor: number; cap: number }
-> = {
-  QB: { rate: 320, base: 1_800, floor: 4_500, cap: 9_500 },
-  RB: { rate: 380, base: 1_400, floor: 3_000, cap: 9_000 },
-  FB: { rate: 380, base: 1_400, floor: 3_000, cap: 9_000 },
-  WR: { rate: 380, base: 1_500, floor: 3_000, cap: 9_000 },
-  TE: { rate: 380, base: 1_100, floor: 2_500, cap: 6_500 },
-  DST: { rate: 420, base: 700, floor: 2_000, cap: 4_500 },
-};
-
-function derivedNflSalary(projection: number, position: string): number {
-  const band =
-    NFL_SALARY_BANDS[position] ?? NFL_SALARY_BANDS.RB;
-  const raw = projection * band.rate + band.base;
-  const snapped = Math.round(raw / 100) * 100;
-  return Math.min(band.cap, Math.max(band.floor, snapped));
 }
 
 interface NflTeamBundle {
@@ -1199,7 +1158,7 @@ async function fetchLiveNflPool(): Promise<LivePool> {
           id: `nfl-${espnId}`,
           name: athlete.displayName ?? espnId,
           sport: "nfl",
-          salary: derivedNflSalary(projection, pos),
+          salary: 0,
           projection: Math.round(projection * 10) / 10,
           team: teamAbbr,
           opponent: opponentAbbr,
@@ -1220,7 +1179,7 @@ async function fetchLiveNflPool(): Promise<LivePool> {
         id: `nfl-dst-${side.team.id}`,
         name: `${teamAbbr} Defense`,
         sport: "nfl",
-        salary: derivedNflSalary(dstProjection, "DST"),
+        salary: 0,
         projection: Math.round(dstProjection * 10) / 10,
         team: teamAbbr,
         opponent: opponentAbbr,

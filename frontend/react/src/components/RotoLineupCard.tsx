@@ -17,6 +17,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, ChevronUp, Copy, Lock, Unlock } from "lucide-react";
 
 import { cn, fmtDecimal, fmtMoney } from "@/lib/utils";
+import { poolHasRealSalaries } from "@/lib/real-salaries";
 import { PlayerChip } from "./PlayerChip";
 import { TeamCrest } from "./TeamCrest";
 import type { Lineup, Player, Sport } from "@/types";
@@ -62,10 +63,12 @@ export function lineupRst(lineup: Lineup, ctx: RotoContext): number {
  * message, so it reads as sentences rather than as a table.
  */
 export function lineupText(lineup: Lineup, ctx: RotoContext): string {
+  // Salary only appears in the copy when the pool has real salaries.
+  const hasRealSalaries = poolHasRealSalaries([...ctx.byId.values()]);
   const lines: string[] = [
     `Fantasy Grinder — Lineup #${lineup.rank}`,
     `Projected: ${fmtDecimal(lineup.total_projection)} points`,
-    `Salary: ${fmtMoney(lineup.total_salary)}`,
+    ...(hasRealSalaries ? [`Salary: ${fmtMoney(lineup.total_salary)}`] : []),
     `Roto Score: ${fmtDecimal(lineupRst(lineup, ctx))}%`,
     "",
   ];
@@ -76,7 +79,9 @@ export function lineupText(lineup: Lineup, ctx: RotoContext): string {
     const points = p ? fmtDecimal(p.projection) : "—";
     const rst = p ? fmtDecimal(playerRst(p, ctx)) : "—";
     lines.push(
-      `${a.slot} — ${a.player_name}${opponent} — ${salary} — ${points} points — Roto Score ${rst}%`,
+      hasRealSalaries
+        ? `${a.slot} — ${a.player_name}${opponent} — ${salary} — ${points} points — Roto Score ${rst}%`
+        : `${a.slot} — ${a.player_name}${opponent} — ${points} points — Roto Score ${rst}%`,
     );
   }
   return lines.join("\n");
@@ -186,6 +191,14 @@ export function RotoLineupCard({
     return counts;
   }, [lineup, ctx]);
 
+  // The pool's salaries are real only when they came from a DraftKings
+  // import. The context's byId map IS the pool, so this works wherever the
+  // card renders — no extra prop to thread through.
+  const hasRealSalaries = useMemo(
+    () => poolHasRealSalaries([...ctx.byId.values()]),
+    [ctx.byId],
+  );
+
   const sport = ctx.sport ?? "nba";
 
   return (
@@ -200,9 +213,16 @@ export function RotoLineupCard({
             #{lineup.rank}
           </span>
         </div>
-        <div className="flex-1 grid grid-cols-3 divide-x divide-line bg-surface-2">
+        <div
+          className={cn(
+            "flex-1 grid divide-x divide-line bg-surface-2",
+            hasRealSalaries ? "grid-cols-3" : "grid-cols-2",
+          )}
+        >
           <HeaderStat label="Projected (est.)" value={fmtDecimal(lineup.total_projection)} />
-          <HeaderStat label="Salary (est.)" value={fmtMoney(lineup.total_salary)} />
+          {hasRealSalaries && (
+            <HeaderStat label="Salary" value={fmtMoney(lineup.total_salary)} />
+          )}
           <HeaderStat label="Roto Score" value={`${fmtDecimal(rst)}%`} accent />
         </div>
       </header>
@@ -213,7 +233,9 @@ export function RotoLineupCard({
             <th className="label text-left font-normal px-3 py-1.5">Player</th>
             <th className="label text-left font-normal px-2 py-1.5">Team</th>
             <th className="label text-left font-normal px-2 py-1.5">Opp</th>
-            <th className="label text-right font-normal px-2 py-1.5">Salary (est.)</th>
+            {hasRealSalaries && (
+              <th className="label text-right font-normal px-2 py-1.5">Salary</th>
+            )}
             <th className="label text-right font-normal px-2 py-1.5">Pts (est.)</th>
             <th className="label text-right font-normal px-3 py-1.5">Roto Score</th>
             <th className="label text-right font-normal px-3 py-1.5">Exposure</th>
@@ -325,9 +347,11 @@ export function RotoLineupCard({
                     <span className="text-ink-subtle">—</span>
                   )}
                 </td>
-                <td className="num px-2 py-1.5 text-right text-ink-muted">
-                  {p ? fmtMoney(p.salary) : "—"}
-                </td>
+                {hasRealSalaries && (
+                  <td className="num px-2 py-1.5 text-right text-ink-muted">
+                    {p ? fmtMoney(p.salary) : "—"}
+                  </td>
+                )}
                 <td className="num px-2 py-1.5 text-right">
                   {p ? fmtDecimal(p.projection) : "—"}
                 </td>

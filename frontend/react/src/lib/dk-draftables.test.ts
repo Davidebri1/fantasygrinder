@@ -56,6 +56,7 @@ describe("parseDraftables", () => {
     // Projection comes from the FPPG attribute (id 90).
     expect(tl!.projection).toBe(20.7);
     expect(tl!.projection_source).toBe("dk");
+    expect(tl!.salary_source).toBe("dk");
     expect(tl!.sport).toBe("nfl");
     expect(tl!.positions).toEqual(["QB"]);
     expect(tl!.roster_positions).toEqual(["QB", "UTIL"]);

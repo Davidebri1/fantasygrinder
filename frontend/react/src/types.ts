@@ -94,6 +94,8 @@ export interface Player {
   user_projection?: number | null;
   /** Where the projection number came from — "dk" for a DraftKings JSON import. */
   projection_source?: string | null;
+  /** Where the salary came from — "dk" for a DraftKings import; absent when none exists. */
+  salary_source?: "dk" | string | null;
   team?: string;
   opponent?: string;
   game_info?: string;

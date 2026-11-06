@@ -30,6 +30,7 @@ import {
 
 import { Player, type Sport } from "@/types";
 import { useAppStore } from "@/store";
+import { poolHasRealSalaries } from "@/lib/real-salaries";
 import { cn, fmtMoney, fmtDecimal } from "@/lib/utils";
 import type { PoolFilter } from "@/hooks/usePlayerFilters";
 import { PlayerChip } from "./PlayerChip";
@@ -94,6 +95,11 @@ export function PlayerPoolTable({
   const [sorting, setSorting] = useState<SortingState>([
     { id: "projection", desc: true },
   ]);
+
+  // The Salary column only exists when the pool carries real salaries (a
+  // DraftKings import). Live ESPN data publishes no salaries, so the
+  // column is left out rather than filled with invented prices.
+  const hasRealSalaries = useMemo(() => poolHasRealSalaries(players), [players]);
 
   const openable = !!onRowClick || !!onPlayerClick;
   const activate = (player: Player) => {
@@ -247,14 +253,18 @@ export function PlayerPoolTable({
     }
 
     // ── The numbers ───────────────────────────────────────────────────
+    if (hasRealSalaries) {
+      base.push(
+        ch.accessor("salary", {
+          id: "salary",
+          header: "Salary",
+          cell: (i) => (
+            <span className="tabular-nums">{fmtMoney(i.getValue<number>())}</span>
+          ),
+        }) as ColumnDef<Player, unknown>,
+      );
+    }
     base.push(
-      ch.accessor("salary", {
-        id: "salary",
-        header: "Salary (est.)",
-        cell: (i) => (
-          <span className="tabular-nums">{fmtMoney(i.getValue<number>())}</span>
-        ),
-      }) as ColumnDef<Player, unknown>,
       ch.accessor("projection", {
         id: "projection",
         header: "Proj (est.)",
@@ -324,7 +334,7 @@ export function PlayerPoolTable({
       }) as ColumnDef<Player, unknown>,
     );
     return base;
-  }, [sport, updatePlayer, onFilterChange, filter]);
+  }, [sport, updatePlayer, onFilterChange, filter, players, hasRealSalaries]);
 
   const table = useReactTable({
     data: players,

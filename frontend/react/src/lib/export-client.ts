@@ -20,6 +20,9 @@ function flattenLineup(l: Lineup): string[] {
 export function exportLineupsCsv(lineups: Lineup[]): void {
   if (lineups.length === 0) return;
   const headerMax = Math.max(...lineups.map((l) => l.assignments.length));
+  // When no lineup carries a real salary, the column stays but the values
+  // come out empty rather than as a row of zeroes.
+  const anySalary = lineups.some((l) => l.total_salary > 0);
   const headers = [
     "rank",
     "strategy",
@@ -33,7 +36,7 @@ export function exportLineupsCsv(lineups: Lineup[]): void {
     const row: string[] = [
       String(l.rank),
       l.strategy,
-      String(l.total_salary),
+      anySalary ? String(l.total_salary) : "",
       l.total_projection.toFixed(2),
       l.total_ceiling.toFixed(2),
       ...flattenLineup(l),
@@ -47,6 +50,7 @@ export function exportLineupsCsv(lineups: Lineup[]): void {
 export function exportLineupsXlsx(lineups: Lineup[]): void {
   if (lineups.length === 0) return;
   const headerMax = Math.max(...lineups.map((l) => l.assignments.length));
+  const anySalary = lineups.some((l) => l.total_salary > 0);
   const headers = [
     "rank",
     "strategy",
@@ -60,7 +64,7 @@ export function exportLineupsXlsx(lineups: Lineup[]): void {
     rows.push([
       l.rank,
       l.strategy,
-      l.total_salary,
+      anySalary ? l.total_salary : "",
       Math.round(l.total_projection * 100) / 100,
       Math.round(l.total_ceiling * 100) / 100,
       ...flattenLineup(l),

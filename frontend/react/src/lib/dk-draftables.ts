@@ -92,6 +92,7 @@ export function parseDraftables(json: string, sport: Sport): Player[] {
       salary: typeof entry.salary === "number" ? entry.salary : 0,
       projection: fppg(entry.draftStatAttributes),
       projection_source: "dk",
+      salary_source: "dk",
       team,
       opponent,
       game_info: entry.competition?.name,
