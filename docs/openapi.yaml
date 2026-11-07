@@ -297,8 +297,6 @@ components:
         opponent: { type: string }
         game_info: { type: string }
         game_time: { type: string, format: date-time, nullable: true }
-        projected_ownership: { type: number, format: double }
-        max_ownership: { type: number, format: double }
         min_exposure: { type: number, format: double }
         max_exposure: { type: number, format: double }
         stddev: { type: number, format: double, nullable: true }

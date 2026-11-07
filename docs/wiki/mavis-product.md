@@ -1,5 +1,11 @@
 # Product — what Fantasy Grinder is
 
+> **Current state, 2026-11-07.** The product on screen is now **Outlier**. The lineups are built
+> by the in-browser solver on Cloudflare Pages; the Django + Postgres backend is still in the repo
+> and CI-tested but is **not deployed**, and nothing on the live site calls it. Ownership is no
+> longer modelled at all, and the salary field holds only published DraftKings prices. Everything
+> below is a dated claim about the state at the commit each section cites.
+
 ## The short version
 
 As of 2026-11-03, Fantasy Grinder is a DFS (daily fantasy sports) lineup optimizer covering **NBA, MMA

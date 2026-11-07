@@ -1,4 +1,4 @@
-# Fantasy Grinder — Operator Runbook
+# Outlier — Operator Runbook
 
 For the customer / ops team. **Last verified 2026-11-04 against the live site and this repo's tip.**
 

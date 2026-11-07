@@ -89,7 +89,7 @@ client request → validator → strategy.solver_backend → result
                    ├── pre-filter (min proj, excluded, locked)
                    ├── for each strategy:
                    │     MaxProjection / Balanced / SalaryCap → 1 MILP solve + perturbations
-                   │     MonteCarlo / Contrarian            → N Monte Carlo sims → 1 solve each
+                   │     MonteCarlo                         → N Monte Carlo sims → 1 solve each
                    ├── post-filter (NBA only: stacking, bring-back, exposure)
                    └── return top-K lineups
 ```

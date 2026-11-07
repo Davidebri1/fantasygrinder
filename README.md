@@ -1,4 +1,4 @@
-# Fantasy Grinder
+# Outlier
 
 A DFS lineup optimizer for **NBA, NFL, MMA and Golf**. It pulls the live slate from ESPN's public
 API, builds the roster, and runs a real optimizer in the browser — lineups, exposure, stacking, and
@@ -17,7 +17,7 @@ cd frontend/react
 npm install
 npm run dev      # local dev server
 npm run build    # -> dist/ (this is what gets published)
-npm test         # vitest: 48 tests (stacks, portfolio, entry-value model, types, utils)
+npm test         # vitest: 76 tests (stacks, portfolio, entry-value model, projections, provenance)
 ```
 
 Publish and prove the live site is that exact build:
@@ -27,8 +27,12 @@ node scripts/mavis-deploy-cloudflare.mjs    # uploads dist/ to the Pages project
 node scripts/mavis-verify-deploy.mjs        # compares SHA256 of every asset, local vs live
 ```
 
-**Status (2026-11-04):** live at `https://mavis-fantasy-grinder.pages.dev`, serving the build in this
+**Status (2026-11-07):** live at `https://mavis-fantasy-grinder.pages.dev`, serving the build in this
 repo's tip commit — verified by SHA256, not by assumption.
+
+**On the name.** The product on screen is **Outlier**. The repository, the GitHub project and the
+published URL keep their original names on purpose: renaming the Cloudflare Pages project would
+break the canonical URL for no user benefit.
 
 ---
 
@@ -39,17 +43,22 @@ This is the most important section in this file, so it is first.
 **Live and real** — everything ESPN publishes: player names, teams, positions, injuries, season
 averages, today's games and headshots. The app fetches these at runtime from ESPN's public API.
 
-**Modelled, and labelled as modelled everywhere they appear** — three numbers that DraftKings owns
-and ESPN does not publish:
+**Real, from DraftKings** — salaries and projections. The app ships with a real DraftKings slate (the
+JAX @ BAL Showdown, with DraftKings' own published prices and FPPG), and you can import any
+DraftKings draftables file. Those are DraftKings' numbers, not this app's.
 
-| Number | Where it comes from | How the app says so |
-|---|---|---|
-| **Projection** | DraftKings scoring applied to the player's ESPN season average | "Proj (est.)" on every column, row and export |
-| **Salary** | `$150 × projected points + $800`, snapped to $100, clamped to $3,000–$11,500 — so salary-cap maths behaves the way a DFS player expects | "Salary (est.)" everywhere |
-| **Ownership** | The player's percentile in the projection ranking — used only to find contrarian leverage | "Own % (est.)" everywhere |
+**The rule for a field: a real number, or nothing.**
 
-The product does not claim these are DraftKings numbers, and it does not sell them as such. If you
-need true DraftKings salaries, this app does not have them.
+- The **salary** field holds a published DraftKings price, or it holds nothing. No price means the
+  field says **Pending** — a placeholder, never a number pretending to be a price.
+- A modelled price exists only for players DraftKings has not priced. It lives in **its own field**
+  (`salary_estimate`) and **its own column**, "Est. salary", which you hide with one click. It
+  never reaches the solver: the engine is handed only real prices, so a pool with no published
+  prices produces **no lineup at all**, and the app says why.
+- **Ownership is not modelled anywhere.** Real ownership comes from DraftKings contest-entry data.
+  Until that feed exists there is no ownership figure and nothing that depends on one.
+- **Projections** carry their source on every row: "DraftKings projection", "Rotowire projection",
+  "My projection", "Season-average (est.)" or "My projection (edited)".
 
 **The ROI estimate is a model.** It is built from this app's projections, the contest settings you
 enter, and a payout model that puts 70% of the prize pool on first place. It is labelled "est. ROI
@@ -60,11 +69,15 @@ projection and it is not a promise.
 sample roster — and it says so in an amber banner across the top of the screen, not in a quiet
 status line. Lineups built from sample data are for demonstration only.
 
+**Nothing is built until you ask.** The app opens on the slate, not on a portfolio of lineups you
+did not choose. Press **Build portfolio** when you want one, and a changing slate never rebuilds
+it behind your back.
+
 ---
 
 ## The optimizer
 
-One solver, three objectives, three simulation modes.
+One solver, three objectives, two simulation modes.
 
 **Objectives (deterministic):**
 
@@ -76,8 +89,6 @@ One solver, three objectives, three simulation modes.
 
 - **Off** — one exact solve of the roster. The fastest path.
 - **Monte Carlo** — 1k–10k correlated outcome samples, one solve each, best unique lineups kept.
-- **Contrarian** — like Monte Carlo, but each simulated score is divided by √ownership so low-owned
-  ceiling plays gain leverage over chalk.
 
 **Portfolio and stacking** are real constraints, not decoration:
 
@@ -104,8 +115,9 @@ Stated plainly, because a customer shipping this to other people needs to know t
   the in-browser optimizer. The backend exists in this repo, is covered by CI, and is one Render
   Blueprint (`backend/django/render.yaml`) away from running — but nothing on the live site calls it
   today.
-- **No DraftKings salary, projection, ownership or contest data.** See *What is real, and what is
-  modelled* above.
+- **No contest data, and no ownership data.** DraftKings salaries and projections come from the
+  DraftKings slate or your import; contest results and ownership do not exist yet. See *What is
+  real, and what is modelled* above.
 - **No accounts, no login, no payment.** State is per-device via `localStorage`.
 - **No live contest results.** Nothing here is connected to a real contest after you enter it.
 
@@ -169,7 +181,7 @@ pwsh bin/dev.ps1         # Windows  |  ./bin/dev  # macOS/Linux
 ```
 frontend/react/            the app — this is what ships
   src/optimizer/           solver, portfolio, stacks, worker
-  src/lib/espn-live.ts     live ESPN fetch + the modelled salary/projection/ownership layer
+  src/lib/espn-live.ts     live ESPN fetch + the estimated-salary layer (display only)
   src/lib/data-provenance.ts   one place that says what is real and what is modelled
   scripts/mavis-*.mjs      deploy, verify, layout-check tooling
 backend/django/            Django + Postgres service (CI-tested, not deployed)
