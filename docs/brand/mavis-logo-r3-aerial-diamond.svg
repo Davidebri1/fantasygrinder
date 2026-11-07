@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  
+  <defs>
+    <radialGradient id="light-c" cx="30%" cy="18%" r="70%">
+      <stop offset="0%" stop-color="rgba(255,250,230,0.30)"/>
+      <stop offset="60%" stop-color="rgba(255,250,230,0.05)"/>
+      <stop offset="100%" stop-color="rgba(4,18,10,0.45)"/>
+    </radialGradient>
+    <filter id="bokeh-c" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="26"/>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="512" height="86" fill="#276a3a"/><rect x="0" y="86" width="512" height="86" fill="#2f7a45"/><rect x="0" y="172" width="512" height="86" fill="#276a3a"/><rect x="0" y="258" width="512" height="86" fill="#2f7a45"/><rect x="0" y="344" width="512" height="86" fill="#276a3a"/><rect x="0" y="430" width="512" height="86" fill="#2f7a45"/>
+  <rect x="0" y="0" width="512" height="512" fill="url(#light-c)"/>
+  <g filter="url(#bokeh-c)" opacity="0.55">
+    <circle cx="120" cy="96" r="44" fill="rgba(255,246,214,0.55)"/>
+    <circle cx="392" cy="140" r="30" fill="rgba(255,246,214,0.40)"/>
+    <circle cx="300" cy="56" r="22" fill="rgba(255,246,214,0.34)"/>
+  </g>
+  <!-- infield dirt -->
+  <path d="M256 232 L376 352 L256 472 L136 352 Z" fill="#9c7248" opacity="0.92"/>
+  <!-- outfield arc -->
+  <path d="M108 300 A 220 220 0 0 1 404 300" fill="none" stroke="#f2efe6" stroke-width="6" opacity="0.55"/>
+  <!-- base paths -->
+  <path d="M256 472 L376 352 M256 472 L136 352" stroke="#f2efe6" stroke-width="5" opacity="0.85" fill="none"/>
+  <!-- bases + plate -->
+  <rect x="248" y="464" width="16" height="16" fill="#f2efe6" transform="rotate(45 256 472)"/>
+  <rect x="368" y="344" width="16" height="16" fill="#f2efe6" transform="rotate(45 376 352)"/>
+  <rect x="128" y="344" width="16" height="16" fill="#f2efe6" transform="rotate(45 136 352)"/>
+  <!-- chalk bell curve over the field -->
+  <path d="M110 300 C170 250 210 168 258 168 C306 168 330 246 402 296" fill="none" stroke="#f2efe6" stroke-width="14" stroke-linecap="round"/>
+  <!-- red outlier flag at the peak -->
+  <line x1="258" y1="168" x2="258" y2="112" stroke="#e5484d" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="258" cy="100" r="19" fill="#e5484d" stroke="#f2efe6" stroke-width="5"/>
+</svg>

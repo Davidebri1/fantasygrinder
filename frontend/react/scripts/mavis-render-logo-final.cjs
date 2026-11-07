@@ -1,0 +1,29 @@
+const { existsSync, readdirSync } = require("fs");
+const { homedir } = require("os");
+const { join } = require("path");
+const { chromium } = require("playwright");
+function findChromium() {
+  const root = join(homedir(), "AppData", "Local", "ms-playwright");
+  if (!existsSync(root)) return undefined;
+  for (const dir of readdirSync(root)) {
+    if (!dir.toLowerCase().startsWith("chromium")) continue;
+    for (const rel of [join(dir, "chrome-headless-shell-win64", "chrome-headless-shell.exe"), join(dir, "chrome-win64", "chrome.exe"), join(dir, "chrome-win", "chrome.exe")]) {
+      const exe = join(root, rel);
+      if (existsSync(exe)) return exe;
+    }
+  }
+}
+(async () => {
+  const b = await chromium.launch({ executablePath: findChromium() });
+  const p = await b.newPage({ viewport: { width: 960, height: 1150 } });
+  await p.goto("file:///C:/Users/D/mavis-fantasy-grinder/docs/brand/mavis-logo-final.html");
+  await p.waitForTimeout(700);
+  await p.screenshot({ path: "C:/Users/D/mavis-fantasy-grinder/docs/brand/mavis-outlier-logo-final.png", fullPage: true });
+  // favicon-size png
+  const p2 = await b.newPage({ viewport: { width: 256, height: 256 } });
+  await p2.goto("file:///C:/Users/D/mavis-fantasy-grinder/docs/brand/mavis-outlier-logo-tile.svg");
+  await p2.waitForTimeout(500);
+  await p2.screenshot({ path: "C:/Users/D/mavis-fantasy-grinder/docs/brand/mavis-outlier-logo-favicon.png" });
+  await b.close();
+  console.log("rendered");
+})().catch((e) => { console.error(String(e).slice(0, 300)); process.exit(1); });
