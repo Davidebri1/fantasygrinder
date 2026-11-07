@@ -175,3 +175,22 @@ abstains.
 | `mavis-verify-deploy.mjs` | MATCH — 3 files, live vs local sha256 |
 | Capture assertions (live site) | all 11 in `docs/shots/after-checks.json` |
 | Engine parity check | 800/800 identical to `dave-projection.ts` |
+
+---
+
+## Repository hygiene — how this round landed
+
+A concurrent agent in another thread ran a blanket `git add -A` and committed, and pushed, two
+things that were never meant to leave this machine: `dev/export_thread_archive.py` and the
+`docs/recovery/` thread archives (about 360 KB of session transcripts). The other thread's own
+instruction to me was explicit — *"leave them alone, do not commit them"* — so those were local
+recovery aids, not published artefacts.
+
+This round's commit restores that intent:
+- `dev/` and `docs/recovery/` are back out of the published tree and remain on disk, untracked,
+  exactly as they were.
+- The published history is this round's commit, not the swept one. The swept commit is still
+  reachable as `2e0f272` if its content is ever wanted.
+- Line endings were restored per file, so a 7-line change reads as a 7-line change again.
+
+Everything in this document was verified against the live site before it was written.
