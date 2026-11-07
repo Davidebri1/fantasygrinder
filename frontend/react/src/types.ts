@@ -13,7 +13,6 @@ export type SolverBackend = "pulp" | "ortools";
 export type Strategy =
   | "monteCarlo"
   | "maxProjection"
-  | "contrarian"
   | "balanced"
   | "salaryCap";
 
@@ -24,7 +23,7 @@ export type Strategy =
  * doesn't present guesses and facts as equals.
  */
 export type ObjectiveFunction = "maxProjection" | "balanced" | "salaryCap";
-export type SimulationMode = "off" | "monteCarlo" | "contrarian";
+export type SimulationMode = "off" | "monteCarlo";
 
 export const OBJECTIVES: {
   value: ObjectiveFunction;
@@ -65,11 +64,6 @@ export const SIMULATION_MODES: {
     label: "Monte Carlo",
     description: "Sample 1k–10k correlated outcomes, optimize each, keep the best unique lineups. For GPP / multi-entry where you want variance-aware builds.",
   },
-  {
-    value: "contrarian",
-    label: "Contrarian (leverage)",
-    description: "Like Monte Carlo, but scores are divided by √ownership — low-owned ceiling plays gain leverage over chalk. Tournament-only.",
-  },
 ];
 
 /**
@@ -81,7 +75,6 @@ export function strategyFromParts(
   simulationMode: SimulationMode,
 ): Strategy {
   if (simulationMode === "monteCarlo") return "monteCarlo";
-  if (simulationMode === "contrarian") return "contrarian";
   return objective;
 }
 
@@ -94,8 +87,17 @@ export interface Player {
   user_projection?: number | null;
   /** Where the projection number came from — "dk" for a DraftKings JSON import. */
   projection_source?: string | null;
-  /** Where the salary came from — "dk" for a DraftKings import; absent when none exists. */
+  /**
+   * Where the salary came from — "dk" for a DraftKings import; absent when
+   * there is no real price for this player.
+   */
   salary_source?: "dk" | string | null;
+  /**
+   * The modelled price, kept in its OWN field so it can never be mistaken
+   * for a published DraftKings price. Display only: it never reaches the
+   * solver and never appears on a lineup.
+   */
+  salary_estimate?: number | null;
   team?: string;
   opponent?: string;
   game_info?: string;
@@ -106,8 +108,6 @@ export interface Player {
   opponent_id?: string;
   bout?: string;
   tee_time?: string | null;
-  projected_ownership?: number;
-  max_ownership?: number;
   min_exposure?: number;
   max_exposure?: number;
   stddev?: number | null;

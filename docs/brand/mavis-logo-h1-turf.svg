@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="lg-h1" cx="28%" cy="10%" r="82%">
+      <stop offset="0%" stop-color="rgba(255,248,214,0.34)"/>
+      <stop offset="55%" stop-color="rgba(255,248,214,0.05)"/>
+      <stop offset="100%" stop-color="rgba(5,20,11,0.58)"/>
+    </radialGradient>
+    <filter id="bk-h1" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="30"/></filter>
+    <filter id="dof-h1" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3.2"/></filter>
+  </defs>
+  <rect x="0" y="0" width="512" height="512" fill="#2a6c3d"/>
+  <rect x="0" y="0" width="512" height="86" fill="#2a6c3d"/><rect x="0" y="86" width="512" height="86" fill="#317c48"/><rect x="0" y="172" width="512" height="86" fill="#2a6c3d"/><rect x="0" y="258" width="512" height="86" fill="#317c48"/><rect x="0" y="344" width="512" height="86" fill="#2a6c3d"/><rect x="0" y="430" width="512" height="86" fill="#317c48"/>
+  <rect x="0" y="0" width="512" height="512" fill="url(#lg-h1)"/>
+  <g filter="url(#bk-h1)" opacity="0.5">
+    <circle cx="104" cy="78" r="48" fill="rgba(255,246,214,0.62)"/>
+    <circle cx="404" cy="116" r="30" fill="rgba(255,246,214,0.42)"/>
+    <circle cx="296" cy="44" r="20" fill="rgba(255,246,214,0.34)"/>
+  </g>
+  <!-- chalk baseline -->
+  <line x1="52" y1="420" x2="460" y2="420" stroke="#f4f1e8" stroke-width="4" opacity="0.35" stroke-linecap="round"/>
+  <!-- the distribution: chalk bars, softened at the far end for depth -->
+  <g filter="url(#dof-h1)" opacity="0.5">
+    <rect x="70" y="390" width="20" height="30" fill="#f4f1e8"/>
+    <rect x="96" y="368" width="20" height="52" fill="#f4f1e8"/>
+  </g>
+  <rect x="70.0" y="390.0" width="20.0" height="30.0" fill="#f4f1e8" opacity="0.93"/><rect x="96.0" y="368.0" width="20.0" height="52.0" fill="#f4f1e8" opacity="0.93"/><rect x="122.0" y="334.0" width="20.0" height="86.0" fill="#f4f1e8" opacity="0.93"/><rect x="148.0" y="298.0" width="20.0" height="122.0" fill="#f4f1e8" opacity="0.93"/><rect x="174.0" y="262.0" width="20.0" height="158.0" fill="#f4f1e8" opacity="0.93"/><rect x="200.0" y="236.0" width="20.0" height="184.0" fill="#f4f1e8" opacity="0.93"/><rect x="226.0" y="220.0" width="20.0" height="200.0" fill="#f4f1e8" opacity="0.93"/><rect x="252.0" y="236.0" width="20.0" height="184.0" fill="#f4f1e8" opacity="0.93"/><rect x="278.0" y="268.0" width="20.0" height="152.0" fill="#f4f1e8" opacity="0.93"/><rect x="304.0" y="310.0" width="20.0" height="110.0" fill="#f4f1e8" opacity="0.93"/><rect x="330.0" y="348.0" width="20.0" height="72.0" fill="#f4f1e8" opacity="0.93"/>
+  <g filter="url(#dof-h1)" opacity="0.55">
+    <rect x="304" y="310" width="20" height="110" fill="#f4f1e8"/>
+    <rect x="330" y="348" width="20" height="72" fill="#f4f1e8"/>
+  </g>
+  <!-- the outlier: one bar, red, standing clear of the distribution -->
+  <rect x="398" y="138" width="32" height="282" fill="#e5484d"/>
+</svg>

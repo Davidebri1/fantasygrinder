@@ -25,7 +25,6 @@ function partsFromStrategy(s: OptimizerUiSettings["strategy"]): {
   sim: SimulationMode;
 } {
   if (s === "monteCarlo") return { objective: "maxProjection", sim: "monteCarlo" };
-  if (s === "contrarian") return { objective: "maxProjection", sim: "contrarian" };
   return { objective: s, sim: "off" };
 }
 

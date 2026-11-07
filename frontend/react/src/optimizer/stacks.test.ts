@@ -17,9 +17,7 @@ function nbaPlayer(over: Partial<Player> & Pick<Player, "id" | "name" | "salary"
     team: "BOS",
     opponent: "NE",
     correlation_group: "BOS@NE",
-    roster_positions: ["PG"],
-    projected_ownership: 20,
-    ...over,
+    roster_positions: ["PG"],    ...over,
   };
 }
 
@@ -46,9 +44,7 @@ const mmaPool: Player[] = [
     projection: 22,
     correlation_group: "card-1",
     bout: "Fighter One vs Fighter Two",
-    roster_positions: ["FLEX"],
-    projected_ownership: 35,
-  },
+    roster_positions: ["FLEX"],  },
   {
     id: "f2",
     name: "Fighter Two",
@@ -57,9 +53,7 @@ const mmaPool: Player[] = [
     projection: 19,
     correlation_group: "card-1",
     bout: "Fighter One vs Fighter Two",
-    roster_positions: ["FLEX"],
-    projected_ownership: 30,
-  },
+    roster_positions: ["FLEX"],  },
   {
     id: "f3",
     name: "Fighter Three",
@@ -68,9 +62,7 @@ const mmaPool: Player[] = [
     projection: 17,
     correlation_group: "card-1",
     bout: "Fighter Three vs Fighter Four",
-    roster_positions: ["FLEX"],
-    projected_ownership: 15,
-  },
+    roster_positions: ["FLEX"],  },
   {
     id: "f4",
     name: "Fighter Four",
@@ -79,9 +71,7 @@ const mmaPool: Player[] = [
     projection: 14,
     correlation_group: "card-1",
     bout: "Fighter Three vs Fighter Four",
-    roster_positions: ["FLEX"],
-    projected_ownership: 12,
-  },
+    roster_positions: ["FLEX"],  },
 ];
 
 const golfPool: Player[] = [
@@ -92,9 +82,7 @@ const golfPool: Player[] = [
     salary: 9000,
     projection: 18,
     correlation_group: "tour-1",
-    roster_positions: ["FLEX"],
-    projected_ownership: 25,
-  },
+    roster_positions: ["FLEX"],  },
 ];
 
 describe("generateStacks — NBA/NFL", () => {

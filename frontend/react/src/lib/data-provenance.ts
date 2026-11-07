@@ -5,10 +5,17 @@
  * ESPN publishes is real: names, teams, positions, injuries, season averages,
  * live games, headshots.
  *
- * ESPN does NOT publish DraftKings salaries, DraftKings projections, or
- * DraftKings ownership percentages. Those three numbers are modelled here so
- * the optimizer has something to optimize against — and the UI says so
- * wherever they appear. They are never presented as DraftKings facts.
+ * DraftKings DOES publish salaries and projections. The app reads them from
+ * a DraftKings slate, and every player who has one carries that real price.
+ *
+ * Where a price is missing, the salary field stays EMPTY — it says Pending.
+ * The modelled price, if there is one, lives in its own field
+ * (salary_estimate) and its own column, which the user can hide with one
+ * click. It never reaches the solver and never appears on a lineup.
+ *
+ * Ownership is not modelled at all. Real ownership comes from DraftKings
+ * contest entry data; until that exists, there is no ownership figure and
+ * nothing that depends on one.
  *
  * This module exists so that "what is real?" has exactly one answer, and that
  * answer is visible to the customer rather than buried in a source file.
@@ -17,6 +24,7 @@
 /** Where a number came from. */
 export type Provenance =
   | "espn-live" /** published by ESPN, live */
+  | "draftkings" /** published by DraftKings */
   | "modelled" /** computed by this app from ESPN data */
   | "user-set" /** typed in by the customer */
   | "derived"; /** computed by the optimizer from the values above */
@@ -36,21 +44,21 @@ export const DATA_FACTS: DataFact[] = [
     provenance: "espn-live",
   },
   {
-    label: "Projections",
-    source:
-      "Modelled — DraftKings scoring applied to this player's ESPN season averages",
-    provenance: "modelled",
-  },
-  {
     label: "Salaries",
     source:
-      "Modelled — $150 per projected point plus $800, snapped to $100, clamped to $3,000–$11,500. Not DraftKings prices.",
+      "DraftKings' own published prices. A player with no published price shows Pending — the field stays empty rather than holding an estimate.",
+    provenance: "draftkings",
+  },
+  {
+    label: "Estimated salaries",
+    source:
+      "Modelled, and kept in its own field (salary_estimate). It never reaches the solver and never appears on a lineup. Hide the column with one click.",
     provenance: "modelled",
   },
   {
-    label: "Ownership",
+    label: "Projections",
     source:
-      "Modelled — a projection percentile, used only to find contrarian leverage. Not a DraftKings number.",
+      "DraftKings' own published projections where the slate has them; otherwise modelled from this player's ESPN season averages.",
     provenance: "modelled",
   },
   {
@@ -66,11 +74,18 @@ export const DATA_FACTS: DataFact[] = [
 ];
 
 /**
- * The standing notice for modelled numbers. Shown wherever projections,
- * salaries or ownership appear.
+ * The standing notice for modelled numbers. Shown wherever projections
+ * appear.
  */
 export const ESTIMATE_NOTICE =
-  "Projections, salaries and ownership are modelled from live ESPN data — they are estimates, not DraftKings numbers.";
+  "Salaries are DraftKings' own published prices; a player with no published price says Pending, and the modelled price sits in its own 'Est. salary' column. Projections are modelled from live ESPN data unless the slate carries DraftKings' own.";
+
+/**
+ * What the app says when a slate has no published prices at all. It is the
+ * difference between a tool that will do its job and one that cannot.
+ */
+export const PRICES_MISSING_NOTICE =
+  "This slate has no published DraftKings prices. Without a real price there is no salary cap to balance and no lineup worth entering. Import the DraftKings file for this slate, or wait for the DraftKings slate to load.";
 
 /**
  * The notice for a sample roster. Loud on purpose: the customer must never

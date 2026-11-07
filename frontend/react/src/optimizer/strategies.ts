@@ -28,12 +28,6 @@ function scoreSalaryCap(players: Player[], weightSalary = 0.7): number[] {
   return players.map((p) => wS * (p.salary / 1000) + wP * effectiveProjection(p));
 }
 
-function scoreContrarian(row: number[], players: Player[]): number[] {
-  return players.map((_p, i) => {
-    const ownership = Math.max(players[i].projectedOwnership ?? 10, 0.1) / 100;
-    return row[i] / Math.sqrt(ownership);
-  });
-}
 
 function perturb(scores: number[], amount: number, seed: number): number[] {
   let s = seed >>> 0;
@@ -53,16 +47,16 @@ export function buildStrategyPlan(
   settings: OptimizerSettings,
   simulatedRows: number[][] | null,
 ): StrategyResult[] {
-  if (strategy === "monteCarlo" || strategy === "contrarian") {
+  if (strategy === "monteCarlo") {
     if (!simulatedRows || simulatedRows.length === 0) return [];
     const n = Math.min(settings.simulationCount, simulatedRows.length);
     const out: StrategyResult[] = [];
     for (let i = 0; i < n; i++) {
       const row = simulatedRows[i];
       out.push({
-        scores: strategy === "contrarian" ? scoreContrarian(row, players) : row,
+        scores: row,
         iteration: i,
-        description: strategy === "contrarian" ? "contrarian" : "monteCarlo",
+        description: "monteCarlo",
       });
     }
     return out;

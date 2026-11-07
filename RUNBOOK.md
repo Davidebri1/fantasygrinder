@@ -100,6 +100,32 @@ node scripts/mavis-verify-deploy.mjs      # must pass before you call it done
 
 `mavis-deploy-cloudflare.mjs --dry-run` prints the file list and total size without uploading.
 
+#### Deploy authentication — resolved once, never a per-deploy step
+
+The publish path needs **no human at run time**. Wrangler's stored OAuth
+session refreshes itself; the script uses that session and prints the account
+and project it is about to publish to before anything is uploaded. Nobody is
+asked to sign in per deploy, to paste a token, or to approve anything while
+the publish runs.
+
+```
+node scripts/mavis-deploy-cloudflare.mjs --check   # auth + target, uploads nothing
+```
+
+- Account: `2699adb1984283a8486bc169c8376a21` (`Ebridavid@gmail.com's Account`)
+- Token scope includes `pages (write)` — the publish needs nothing more.
+- Credentials live at `C:\Users\D\.wrangler\config\default.toml`, outside the repo.
+- The wrangler version is pinned to `4.157.0` because 4.158+ refuses an
+  OAuth login in a non-interactive shell and demands a long-lived API token.
+  A global wrangler newer than 4.157 is detected and passed over.
+- The ONLY case that needs a human is a machine where the OAuth session is
+  missing entirely (fresh machine, or a wiped `.wrangler`). Then, once:
+  `npx wrangler@4.157.0 login`. That is the whole of it.
+
+**If you are reading this because a previous run said "not authenticated":
+that is the one-time case above. Fix it and move on — it is not a recurring
+step and it is never a question for the customer.**
+
 ### Backend (Render) — not deployed yet
 
 `backend/django/render.yaml` provisions the web service and Postgres. Render runs:

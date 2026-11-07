@@ -1,0 +1,24 @@
+{
+  "url": "https://mavis-fantasy-grinder.pages.dev/",
+  "label": "after",
+  "checks": {
+    "opensOnDkSlate": true,
+    "showsRealPrices": false,
+    "hasOwnPctColumn": false,
+    "hasEstSalaryColumn": false,
+    "hasPendingSalary": false,
+    "noPrebuiltLineups": true,
+    "showsLineupCards": false,
+    "poolHasOwnPct": false,
+    "poolHasEstSalary": true,
+    "espnShowsPending": true,
+    "espnHasPricesMissingBanner": true,
+    "espnStillHasOwnPct": false,
+    "espnShowsEstimateColumn": true
+  },
+  "shots": [
+    "C:\\Users\\D\\mavis-fantasy-grinder\\docs\\shots\\after-1-open.png",
+    "C:\\Users\\D\\mavis-fantasy-grinder\\docs\\shots\\after-2-pool.png",
+    "C:\\Users\\D\\mavis-fantasy-grinder\\docs\\shots\\after-3-espn-pool.png"
+  ]
+}

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="lg-h2" cx="30%" cy="12%" r="80%">
+      <stop offset="0%" stop-color="rgba(255,248,214,0.32)"/>
+      <stop offset="58%" stop-color="rgba(255,248,214,0.05)"/>
+      <stop offset="100%" stop-color="rgba(5,20,11,0.55)"/>
+    </radialGradient>
+    <filter id="bk-h2" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="28"/></filter>
+  </defs>
+  <rect x="0" y="0" width="512" height="512" fill="#2a6c3d"/>
+  <rect x="0" y="0" width="512" height="86" fill="#2a6c3d"/><rect x="0" y="86" width="512" height="86" fill="#317c48"/><rect x="0" y="172" width="512" height="86" fill="#2a6c3d"/><rect x="0" y="258" width="512" height="86" fill="#317c48"/><rect x="0" y="344" width="512" height="86" fill="#2a6c3d"/><rect x="0" y="430" width="512" height="86" fill="#317c48"/>
+  <rect x="0" y="0" width="512" height="512" fill="url(#lg-h2)"/>
+  <g filter="url(#bk-h2)" opacity="0.48">
+    <circle cx="110" cy="84" r="46" fill="rgba(255,246,214,0.6)"/>
+    <circle cx="398" cy="120" r="30" fill="rgba(255,246,214,0.4)"/>
+  </g>
+  <!-- the distribution, chalk on the outfield grass -->
+  <rect x="74.0" y="262.6" width="15.6" height="23.4" fill="#f4f1e8" opacity="0.92"/><rect x="94.3" y="245.4" width="15.6" height="40.6" fill="#f4f1e8" opacity="0.92"/><rect x="114.6" y="218.9" width="15.6" height="67.1" fill="#f4f1e8" opacity="0.92"/><rect x="134.8" y="190.8" width="15.6" height="95.2" fill="#f4f1e8" opacity="0.92"/><rect x="155.1" y="162.8" width="15.6" height="123.2" fill="#f4f1e8" opacity="0.92"/><rect x="175.4" y="142.5" width="15.6" height="143.5" fill="#f4f1e8" opacity="0.92"/><rect x="195.7" y="130.0" width="15.6" height="156.0" fill="#f4f1e8" opacity="0.92"/><rect x="216.0" y="142.5" width="15.6" height="143.5" fill="#f4f1e8" opacity="0.92"/><rect x="236.2" y="167.4" width="15.6" height="118.6" fill="#f4f1e8" opacity="0.92"/><rect x="256.5" y="200.2" width="15.6" height="85.8" fill="#f4f1e8" opacity="0.92"/><rect x="276.8" y="229.8" width="15.6" height="56.2" fill="#f4f1e8" opacity="0.92"/>
+  <rect x="336" y="112" width="25" height="174" fill="#e5484d"/>
+  <!-- outfield arc -->
+  <path d="M74 300 A 190 190 0 0 1 448 300" fill="none" stroke="#f4f1e8" stroke-width="5" opacity="0.5"/>
+  <!-- the diamond -->
+  <path d="M256 336 L368 448 L256 560 L144 448 Z" fill="#9c7248" opacity="0.92" transform="translate(0,-96)"/>
+  <path d="M256 464 L368 352 M256 464 L144 352" stroke="#f4f1e8" stroke-width="4.5" opacity="0.85" fill="none"/>
+  <rect x="248" y="456" width="16" height="16" fill="#f4f1e8" transform="rotate(45 256 464)"/>
+  <rect x="360" y="344" width="16" height="16" fill="#f4f1e8" transform="rotate(45 368 352)"/>
+  <rect x="136" y="344" width="16" height="16" fill="#f4f1e8" transform="rotate(45 144 352)"/>
+</svg>

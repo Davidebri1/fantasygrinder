@@ -38,7 +38,6 @@ export type SolverBackend = "pulp" | "ortools" | "browser";
 export type Strategy =
   | "monteCarlo"
   | "maxProjection"
-  | "contrarian"
   | "balanced"
   | "salaryCap";
 
@@ -57,7 +56,6 @@ export interface Player {
   correlationGroup?: string;
   opponentId?: string;
   bout?: string;
-  projectedOwnership?: number;
   isLocked?: boolean;
   isExcluded?: boolean;
   isLiked?: boolean;

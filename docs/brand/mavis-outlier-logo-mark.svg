@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <path d="M256 262 L366 372 L256 482 L146 372 Z" fill="none" stroke="#f4f1e8" stroke-width="7" opacity="0.85"/>
-  <path d="M84 318 C118 314 132 306 152 284 C176 258 196 186 256 186 C316 186 336 258 360 284 C380 306 394 314 428 318"
-        fill="none" stroke="#f4f1e8" stroke-width="15" stroke-linecap="round"/>
-  <circle cx="352" cy="140" r="16" fill="#e5484d" stroke="#f4f1e8" stroke-width="4.5"/>
-  <line x1="352" y1="156" x2="352" y2="198" stroke="#e5484d" stroke-width="5" stroke-linecap="round"/>
+  <defs>
+    <filter id="glm" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="22"/></filter>
+  </defs>
+  <line x1="46" y1="428" x2="466" y2="428" stroke="#eef3ff" stroke-width="3" opacity="0.28" stroke-linecap="round"/>
+  <rect x="64.0" y="399.2" width="19.2" height="28.8" fill="#eef3ff" opacity="0.88"/><rect x="89.0" y="378.1" width="19.2" height="49.9" fill="#eef3ff" opacity="0.88"/><rect x="113.9" y="345.4" width="19.2" height="82.6" fill="#eef3ff" opacity="0.88"/><rect x="138.9" y="310.9" width="19.2" height="117.1" fill="#eef3ff" opacity="0.88"/><rect x="163.8" y="276.3" width="19.2" height="151.7" fill="#eef3ff" opacity="0.88"/><rect x="188.8" y="251.4" width="19.2" height="176.6" fill="#eef3ff" opacity="0.88"/><rect x="213.8" y="236.0" width="19.2" height="192.0" fill="#eef3ff" opacity="0.88"/><rect x="238.7" y="251.4" width="19.2" height="176.6" fill="#eef3ff" opacity="0.88"/><rect x="263.7" y="282.1" width="19.2" height="145.9" fill="#eef3ff" opacity="0.88"/><rect x="288.6" y="322.4" width="19.2" height="105.6" fill="#eef3ff" opacity="0.88"/><rect x="313.6" y="358.9" width="19.2" height="69.1" fill="#eef3ff" opacity="0.88"/>
+  <rect x="394" y="150" width="30" height="278" fill="#ff4d55" opacity="0.5" filter="url(#glm)"/>
+  <rect x="394" y="150" width="30" height="278" fill="#e5484d"/>
 </svg>

@@ -283,28 +283,25 @@ export function dkFantasyPoints(s: PlayerStats): number {
 }
 
 /**
- * Salaries when no DraftKings price exists.
+ * The estimated price of a player whose real DraftKings price is unknown.
  *
- * These are ESTIMATES produced by a published formula so the optimizer has a
- * cap to balance before a DraftKings slate is imported. The UI tags them
- * "(est.)" at every site, and a real DraftKings import replaces them outright.
+ * DraftKings DOES publish salaries. The app gets them from a DraftKings
+ * slate, and every player who has one carries that real price. This
+ * estimate exists only for players with no DraftKings price, and it lives
+ * in its OWN field (salary_estimate) so it can never be mistaken for a
+ * published price. It is display-only: it never reaches the solver and
+ * never appears on a lineup.
  */
-/**
- * Salary derived from projection.
- * DraftKings does not publish its salaries; this reproduces the shape of a
- * DK salary list (3.5k-11.5k, ~150 dollars per projected point) so that
- * salary-cap constraints behave the way a DFS player expects.
- */
-export function derivedSalary(projection: number): number {
+export function estimatedSalary(projection: number): number {
   const raw = projection * 150 + 800;
   const snapped = Math.round(raw / 100) * 100;
   return Math.min(11_500, Math.max(3_000, snapped));
 }
 
 /**
- * Salary derived from projection, shaped like a real DraftKings NFL salary
- * list: quarterbacks cost more per projected point and have a higher floor,
- * and a defense sits at the bottom of the range.
+ * The same estimate, shaped like a DraftKings NFL salary list: quarterbacks
+ * cost more per projected point and have a higher floor, and a defense sits
+ * at the bottom of the range. Still an estimate — it lives in its own field.
  */
 const NFL_SALARY_BANDS: Record<
   string,
@@ -318,7 +315,7 @@ const NFL_SALARY_BANDS: Record<
   DST: { rate: 420, base: 700, floor: 2_000, cap: 4_500 },
 };
 
-function derivedNflSalary(projection: number, position: string): number {
+function estimatedNflSalary(projection: number, position: string): number {
   const band =
     NFL_SALARY_BANDS[position] ?? NFL_SALARY_BANDS.RB;
   const raw = projection * band.rate + band.base;
@@ -355,20 +352,6 @@ function scaleBaseline(base: PlayerStats, raw: PlayerStats | undefined): PlayerS
     to: base.to * scale,
     threePm: base.threePm * scale,
   };
-}
-
-/**
- * Projected ownership, derived from where each player sits in the pool by
- * projection. ESPN does not publish ownership numbers, and the contrarian
- * mode needs them to find leverage plays — a chalk-heavy pool has high
- * ownership, a value pool has low.
- */
-function applyOwnership(players: Player[]): void {
-  const ranked = [...players].sort((a, b) => b.projection - a.projection);
-  ranked.forEach((p, i) => {
-    const percentile = ranked.length > 1 ? i / (ranked.length - 1) : 0;
-    p.projected_ownership = Math.max(2, Math.round(48 - percentile * 44));
-  });
 }
 
 // ---------------------------------------------------------------------------
@@ -645,7 +628,9 @@ async function fetchLiveNbaPool(): Promise<LivePool> {
           id: `nba-${espnId}`,
           name,
           sport: "nba",
-          salary: derivedSalary(projection),
+          salary: 0,
+
+          salary_estimate: estimatedSalary(projection),
           projection: Math.round(projection * 10) / 10,
           team: teamAbbr,
           opponent: opponentAbbr,
@@ -662,8 +647,6 @@ async function fetchLiveNbaPool(): Promise<LivePool> {
       }
     }
   }
-
-  applyOwnership(players);
 
   const outCount = players.filter((p) => (p.injury_status ?? "").toLowerCase().includes("out")).length;
   if (outCount > 0) {
@@ -819,7 +802,9 @@ async function fetchLiveMmaPool(): Promise<LivePool> {
         id: `mma-${espnId}`,
         name,
         sport: "mma",
-        salary: derivedSalary(projection),
+        salary: 0,
+
+        salary_estimate: estimatedSalary(projection),
         projection: Math.round(projection * 10) / 10,
         opponent,
         bout: `${names[0] ?? ""} vs ${names[1] ?? ""}`,
@@ -851,8 +836,6 @@ async function fetchLiveMmaPool(): Promise<LivePool> {
   warnings.push(
     "MMA projections are record-based baselines — ESPN does not publish per-fight strike counts.",
   );
-
-  applyOwnership(players);
 
   return {
     sport: "mma",
@@ -928,7 +911,9 @@ async function fetchLiveGolfPool(): Promise<LivePool> {
       id: `golf-${g.id}`,
       name: g.name,
       sport: "golf",
-      salary: derivedSalary(projection),
+      salary: 0,
+
+      salary_estimate: estimatedSalary(projection),
       projection: Math.round(projection * 10) / 10,
       game_info: tournament,
       game_time: ev.date ?? null,
@@ -943,8 +928,6 @@ async function fetchLiveGolfPool(): Promise<LivePool> {
   if (known.length === 0) {
     warnings.push("The leaderboard has no scores yet — projections are pre-tournament estimates.");
   }
-
-  applyOwnership(players);
 
   return {
     sport: "golf",
@@ -1202,7 +1185,9 @@ async function fetchLiveNflPool(): Promise<LivePool> {
           id: `nfl-${espnId}`,
           name: athlete.displayName ?? espnId,
           sport: "nfl",
-          salary: derivedNflSalary(projection, pos),
+          salary: 0,
+
+          salary_estimate: estimatedNflSalary(projection, pos),
           projection: Math.round(projection * 10) / 10,
           team: teamAbbr,
           opponent: opponentAbbr,
@@ -1223,7 +1208,9 @@ async function fetchLiveNflPool(): Promise<LivePool> {
         id: `nfl-dst-${side.team.id}`,
         name: `${teamAbbr} Defense`,
         sport: "nfl",
-        salary: derivedNflSalary(dstProjection, "DST"),
+        salary: 0,
+
+        salary_estimate: estimatedNflSalary(dstProjection, "DST"),
         projection: Math.round(dstProjection * 10) / 10,
         team: teamAbbr,
         opponent: opponentAbbr,
@@ -1236,8 +1223,6 @@ async function fetchLiveNflPool(): Promise<LivePool> {
       });
     }
   }
-
-  applyOwnership(players);
 
   const withoutStats = players.filter((p) => p.projection > 0).length;
   if (withoutStats === 0) warnings.push("No player data came back from ESPN.");

@@ -11,6 +11,7 @@
  * it, a click outside closes it, Tab stays inside it, and the focus goes
  * back to whatever opened it.
  */
+import { salaryIsReal } from "@/lib/real-salaries";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Ban, Heart, Lock, Unlock, X } from "lucide-react";
@@ -328,18 +329,23 @@ export function PlayerDrawer({
         {/* Facts */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-            <Fact label={player.salary_source === "dk" ? "Salary" : "Salary (est.)"} value={fmtMoney(player.salary)} />
             <Fact
-              label="Projected points (est.)"
-              value={fmtDecimal(player.projection)}
+              label="Salary"
+              value={salaryIsReal(player) ? fmtMoney(player.salary) : "Pending"}
             />
+            {!salaryIsReal(player) && (
+              <Fact
+                label="Est. salary"
+                value={player.salary_estimate ? fmtMoney(player.salary_estimate) : "—"}
+              />
+            )}
             <Fact
-              label="Projected ownership (est.)"
-              value={
-                player.projected_ownership !== undefined
-                  ? `${fmtDecimal(player.projected_ownership)}%`
-                  : "Not on the board"
+              label={
+                player.projection_source === "dk"
+                  ? "Projected points"
+                  : "Projected points (est.)"
               }
+              value={fmtDecimal(player.projection)}
             />
             <Fact
               label="Portfolio exposure"

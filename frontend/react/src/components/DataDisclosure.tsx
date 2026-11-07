@@ -5,12 +5,18 @@
  *
  *  - `SampleDataBanner` — the roster on screen is a bundled sample because
  *    the live feed could not be reached. Loud, amber, unmissable.
- *  - `EstimateNotice` — projections, salaries and ownership are modelled
- *    estimates. Quiet, persistent, attached to every surface that shows them.
+ *  - `EstimateNotice` — projections are modelled estimates. Quiet,
+ *    persistent, attached to every surface that shows them.
+ *  - `PricesMissingBanner` — the slate has no published DraftKings
+ *    prices, so nothing here can be built into an enterable lineup.
  */
 import { AlertTriangle, Info } from "lucide-react";
 
-import { ESTIMATE_NOTICE, SAMPLE_NOTICE } from "@/lib/data-provenance";
+import {
+  ESTIMATE_NOTICE,
+  PRICES_MISSING_NOTICE,
+  SAMPLE_NOTICE,
+} from "@/lib/data-provenance";
 
 export function SampleDataBanner({ className = "" }: { className?: string }) {
   return (
@@ -32,6 +38,26 @@ export function SampleDataBanner({ className = "" }: { className?: string }) {
   );
 }
 
+export function PricesMissingBanner({ className = "" }: { className?: string }) {
+  return (
+    <div
+      role="alert"
+      className={`flex items-start gap-2.5 rounded-2 border px-3.5 py-2.5 text-xs ${className}`}
+      style={{
+        borderColor: "var(--warn)",
+        background: "var(--warn-wash)",
+        color: "var(--warn)",
+      }}
+    >
+      <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden />
+      <span className="leading-relaxed">
+        <strong className="font-semibold">No DraftKings prices on this slate.</strong>{" "}
+        {PRICES_MISSING_NOTICE}
+      </span>
+    </div>
+  );
+}
+
 export function EstimateNotice({
   className = "",
   mode = "estimate",
@@ -42,7 +68,7 @@ export function EstimateNotice({
 }) {
   const text =
     mode === "dk"
-      ? "Salaries and projections on this slate are DraftKings' own published numbers. Ownership is modelled."
+      ? "Salaries and projections on this slate are DraftKings' own published numbers."
       : ESTIMATE_NOTICE;
   return (
     <p

@@ -2,19 +2,26 @@
  * Sport optimizer screen — the one screen every sport uses.
  *
  * The rule for this screen is that it never asks for input. It pulls the
- * live slate when you arrive, builds the portfolio from it, and keeps
- * rebuilding it as the slate changes. Everything on the page is a readout
+ * live slate when you arrive and shows what is on it. It does NOT build a
+ * portfolio for you: a pre-built lineup is a lineup you did not choose, so
+ * the portfolio is built when you press the button, and the slate changing
+ * never rebuilds it behind your back. Everything on the page is a readout
  * or a control you can reach without stopping what the app is doing.
  *
  * The layout follows how a DFS product is actually read: the board at the
  * top, the controls down the left, and the results on the right in tabs —
  * lineups, exposure, the player pool, and what to enter.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { salaryIsReal } from "@/lib/real-salaries";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Download, PlayCircle, RefreshCw, Trash2, Upload, X } from "lucide-react";
 
 import { EspnSyncPanel } from "@/components/EspnSyncPanel";
-import { EstimateNotice, SampleDataBanner } from "@/components/DataDisclosure";
+import {
+  EstimateNotice,
+  PricesMissingBanner,
+  SampleDataBanner,
+} from "@/components/DataDisclosure";
 import { ExposureReport, computeExposure } from "@/components/ExposureReport";
 import { ImportDialog } from "@/components/ImportDialog";
 import { LineupCountPicker } from "@/components/LineupCountPicker";
@@ -35,7 +42,11 @@ import {
 
 import { useAppStore } from "@/store";
 import { runOptimizerAsync } from "@/lib/run-optimizer";
-import { exportLineupsCsv, exportLineupsXlsx } from "@/lib/export-client";
+import {
+  exportLineupsCsv,
+  exportLineupsXlsx,
+  setExportPlayers,
+} from "@/lib/export-client";
 import { cn, fmtDecimal, fmtMoney } from "@/lib/utils";
 import {
   NBA_CLASSIC_SLOTS,
@@ -70,7 +81,8 @@ function toEngine(p: Player): EnginePlayer {
     id: p.id,
     name: p.name,
     sport: p.sport,
-    salary: p.salary,
+    // Only a real published price is ever handed to the solver.
+    salary: salaryIsReal(p) ? p.salary : 0,
     projection: p.projection,
     userProjection: p.user_projection ?? p.projection,
     team: p.team,
@@ -81,7 +93,6 @@ function toEngine(p: Player): EnginePlayer {
     correlationGroup: p.correlation_group,
     opponentId: p.opponent_id,
     bout: p.bout,
-    projectedOwnership: p.projected_ownership,
     isLocked: p.is_locked,
     isExcluded: p.is_excluded,
     isLiked: p.is_liked,
@@ -179,6 +190,12 @@ export function SportOptimizerScreen({ sport }: { sport: Sport }) {
     };
   }, [sport, loadLive]);
 
+  // The exporter needs the pool, so each exported lineup can carry the
+  // provenance of its projections.
+  useEffect(() => {
+    setExportPlayers(players);
+  }, [players]);
+
   const patch = (p: Partial<OptimizerUiSettings>) =>
     setSettings((s) => ({ ...s, ...p }));
 
@@ -234,19 +251,13 @@ export function SportOptimizerScreen({ sport }: { sport: Sport }) {
   );
 
   /**
-   * Build automatically. The key is the sport plus the version of the
-   * slate, so a fresh roster (or a fresh pull of the same roster) rebuilds
-   * the portfolio exactly once, and changing a setting never triggers a
-   * rebuild behind the user's back.
+   * Nothing is built until the user asks for it.
+   *
+   * A pre-built portfolio defeats the purpose: the user opens the app to
+   * choose what they want, not to be handed a lineup they did not select.
+   * The slate can change underneath them; the portfolio does not rebuild
+   * itself behind their back. Press Build portfolio when you are ready.
    */
-  const builtKey = useRef<string | null>(null);
-  useEffect(() => {
-    if (players.length === 0) return;
-    const key = `${sport}:${lastSyncedAt ?? "sample"}:${players.length}`;
-    if (builtKey.current === key) return;
-    builtKey.current = key;
-    run();
-  }, [players, lastSyncedAt, sport, run]);
 
   const lineups = useMemo(() => lastResult ?? [], [lastResult]);
 
@@ -415,6 +426,13 @@ export function SportOptimizerScreen({ sport }: { sport: Sport }) {
 
   const allWarnings = [...liveWarnings, ...warnings];
 
+  // A lineup can only be built from players who carry a real published
+  // price. The solver already refuses the rest; this says so plainly.
+  const hasRealPrices = useMemo(
+    () => players.length > 0 && players.some((p) => salaryIsReal(p)),
+    [players],
+  );
+
   return (
     <div className="space-y-5">
       {/* ── Header ─────────────────────────────────────────────────── */}
@@ -521,6 +539,8 @@ export function SportOptimizerScreen({ sport }: { sport: Sport }) {
 
       {rosterSource === "sample" && <SampleDataBanner />}
 
+      {!hasRealPrices && <PricesMissingBanner />}
+
       {allWarnings.length > 0 && (
         <ul className="well p-3 space-y-1">
           {allWarnings.map((w) => (
@@ -559,7 +579,8 @@ export function SportOptimizerScreen({ sport }: { sport: Sport }) {
               {running ? "Building…" : "Build portfolio"}
             </button>
             <p className="label-quiet mt-2.5">
-              The portfolio rebuilds itself whenever the slate changes.
+              Nothing is built until you press the button. The slate changing
+              never rebuilds your portfolio behind your back.
             </p>
             {settings.stack_rules.length > 0 && (
               <div className="mt-3 flex items-center gap-2">
@@ -762,7 +783,8 @@ function LineupsTab({
     return (
       <div className="well p-10 text-center">
         <p className="text-ink-muted">
-          No lineups yet. The portfolio builds as soon as the slate is loaded.
+          No lineups yet. Nothing is built until you press Build portfolio —
+          the slate loading does not choose a lineup for you.
         </p>
       </div>
     );

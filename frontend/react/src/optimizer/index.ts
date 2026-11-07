@@ -151,7 +151,7 @@ export function runOptimize(
 
   // 2. Monte Carlo?
   let simulatedRows: number[][] | null = null;
-  if (settings.strategy === "monteCarlo" || settings.strategy === "contrarian") {
+  if (settings.strategy === "monteCarlo") {
     const means = eligible.map((p) => effectiveProjection(p));
     const stds = eligible.map((p) => effectiveStddev(p));
     void means;

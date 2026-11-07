@@ -86,9 +86,7 @@ export function buildNbaSample(): Player[] {
         gameInfo: `${teamA}@${teamB} 7:00pm ET`,
         positions: [pos],
         rosterPositions: rosterPositionsFor(pos),
-        correlationGroup: `${teamA}@${teamB}`,
-        projectedOwnership: Math.round(2 + rand() * 33),
-        photoUrl: headshotUrl,
+        correlationGroup: `${teamA}@${teamB}`,        photoUrl: headshotUrl,
       });
     }
   }
@@ -162,9 +160,7 @@ export function buildMmaSample(): Player[] {
       salary: 0,
       projection: Math.round(40 + rand() * 50),
       opponentId: `mma-${i}-1`,
-      bout: `${a} vs ${b}`,
-      projectedOwnership: Math.round(5 + rand() * 35),
-      photoUrl: MMA_HEADSHOT_URLS[a],
+      bout: `${a} vs ${b}`,      photoUrl: MMA_HEADSHOT_URLS[a],
     });
     out.push({
       id: `mma-${i}-1`,
@@ -173,9 +169,7 @@ export function buildMmaSample(): Player[] {
       salary: 0,
       projection: Math.round(40 + rand() * 50),
       opponentId: `mma-${i}-0`,
-      bout: `${a} vs ${b}`,
-      projectedOwnership: Math.round(5 + rand() * 35),
-      photoUrl: MMA_HEADSHOT_URLS[b],
+      bout: `${a} vs ${b}`,      photoUrl: MMA_HEADSHOT_URLS[b],
     });
     void div;
   });
@@ -236,9 +230,7 @@ export function buildGolfSample(): Player[] {
     name,
     sport: "golf",
     salary: 0,
-    projection: Math.round(45 + rand() * 50),
-    projectedOwnership: Math.round(2 + rand() * 28),
-    photoUrl: GOLF_HEADSHOT_URLS[name],
+    projection: Math.round(45 + rand() * 50),    photoUrl: GOLF_HEADSHOT_URLS[name],
   }));
 }
 
@@ -329,9 +321,7 @@ export function buildNflSample(): Player[] {
         gameInfo: `${gameKey} 1:00pm ET`,
         positions: [pos],
         rosterPositions: pos === "RB" ? ["RB", "FLEX"] : pos === "WR" ? ["WR", "FLEX"] : pos === "TE" ? ["TE", "FLEX"] : ["QB"],
-        correlationGroup: gameKey,
-        projectedOwnership: Math.round(2 + rand() * 33),
-        photoUrl: null,
+        correlationGroup: gameKey,        photoUrl: null,
       });
     });
     // One DST unit per side.
@@ -350,9 +340,7 @@ export function buildNflSample(): Player[] {
         gameInfo: `${gameKey} 1:00pm ET`,
         positions: ["DST"],
         rosterPositions: ["DST"],
-        correlationGroup: gameKey,
-        projectedOwnership: Math.round(5 + rand() * 20),
-        photoUrl: null,
+        correlationGroup: gameKey,        photoUrl: null,
       });
     });
   });

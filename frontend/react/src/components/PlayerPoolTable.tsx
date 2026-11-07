@@ -17,6 +17,7 @@ import {
   useReactTable,
   type ColumnDef,
   type SortingState,
+  type VisibilityState,
 } from "@tanstack/react-table";
 import {
   ArrowDown,
@@ -30,7 +31,8 @@ import {
 
 import { Player, type Sport } from "@/types";
 import { useAppStore } from "@/store";
-import { salaryDisplay } from "@/lib/real-salaries";
+import { salaryEstimateDisplay, salaryIsReal } from "@/lib/real-salaries";
+import { projectionSourceText } from "@/lib/projection-source";
 import { cn, fmtMoney, fmtDecimal } from "@/lib/utils";
 import type { PoolFilter } from "@/hooks/usePlayerFilters";
 import { PlayerChip } from "./PlayerChip";
@@ -53,7 +55,7 @@ interface Props {
 const ch = createColumnHelper<Player>();
 
 /** Columns whose values are numbers — right-aligned, tabular figures. */
-const NUMERIC_COLUMNS = new Set(["salary", "projection", "ownership"]);
+const NUMERIC_COLUMNS = new Set(["salary", "salary_estimate", "projection"]);
 
 /** The text a position column sorts and displays on. */
 function positionText(p: Player): string {
@@ -63,24 +65,6 @@ function positionText(p: Player): string {
 /** The word this sport uses for the thing a player is part of. */
 function contestText(p: Player): string {
   return (p.game_info ?? "").trim();
-}
-
-/**
- * Where this player's projection number comes from, in plain words.
- * A hand-edited number is always the customer's own.
- */
-function projectionSourceText(p: Player): string {
-  if (p.user_projection != null) return "My projection (edited)";
-  switch (p.projection_source) {
-    case "dk":
-      return "DraftKings projection";
-    case "rotowire":
-      return "Rotowire projection";
-    case "mine":
-      return "My projection";
-    default:
-      return "Season-average (est.)";
-  }
 }
 
 export function PlayerPoolTable({
@@ -95,15 +79,15 @@ export function PlayerPoolTable({
   const [sorting, setSorting] = useState<SortingState>([
     { id: "projection", desc: true },
   ]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
-  // Every salary shows, and every salary says where it came from: a real
-  // DraftKings price shows bare; an estimate carries its "(est.)" tag so the
-  // column is always informative and never misleading.
-  const salaryBySource = useMemo(() => {
-    const map = new Map<string, { text: string; estimate: boolean }>();
-    for (const p of players) map.set(p.id, salaryDisplay(p));
-    return map;
-  }, [players]);
+  // The estimated-salary column appears when there is something to show in
+  // it, and the user can hide it again with one click.
+  const hasEstimates = useMemo(
+    () => players.some((p) => salaryEstimateDisplay(p).present),
+    [players],
+  );
+  const showEstimates = columnVisibility.salary_estimate ?? hasEstimates;
 
   const openable = !!onRowClick || !!onPlayerClick;
   const activate = (player: Player) => {
@@ -262,16 +246,24 @@ export function PlayerPoolTable({
         id: "salary",
         header: "Salary",
         cell: (i) => {
-          const d = salaryBySource.get(i.row.original.id) ?? {
-            text: fmtMoney(i.getValue<number>()),
-            estimate: true,
-          };
-          return (
-            <span className="tabular-nums">
-              {d.text}
-              {d.estimate && <span className="text-ink-subtle"> (est.)</span>}
-            </span>
-          );
+          const p = i.row.original;
+          if (!salaryIsReal(p)) {
+            return <span className="text-ink-subtle">Pending</span>;
+          }
+          return <span className="tabular-nums">{fmtMoney(p.salary)}</span>;
+        },
+      }) as ColumnDef<Player, unknown>,
+    );
+    // The modelled price, in its own column. It is not a price: it never
+    // reaches the solver and never appears on a lineup.
+    base.push(
+      ch.accessor((r: Player) => r.salary_estimate ?? 0, {
+        id: "salary_estimate",
+        header: "Est. salary",
+        cell: (i) => {
+          const d = salaryEstimateDisplay(i.row.original);
+          if (!d.present) return <span className="text-ink-subtle">—</span>;
+          return <span className="tabular-nums text-ink-muted">{d.text}</span>;
         },
       }) as ColumnDef<Player, unknown>,
     );
@@ -289,15 +281,6 @@ export function PlayerPoolTable({
         cell: ({ row }) => (
           <span className="text-xs text-ink-muted">
             {projectionSourceText(row.original)}
-          </span>
-        ),
-      }) as ColumnDef<Player, unknown>,
-      ch.accessor((r: Player) => r.projected_ownership ?? 0, {
-        id: "ownership",
-        header: "Own % (est.)",
-        cell: (i) => (
-          <span className="tabular-nums text-ink-muted">
-            {fmtDecimal(i.getValue<number>())}
           </span>
         ),
       }) as ColumnDef<Player, unknown>,
@@ -345,13 +328,14 @@ export function PlayerPoolTable({
       }) as ColumnDef<Player, unknown>,
     );
     return base;
-  }, [sport, updatePlayer, onFilterChange, filter, players, salaryBySource]);
+  }, [sport, updatePlayer, onFilterChange, filter, players]);
 
   const table = useReactTable({
     data: players,
     columns,
-    state: { sorting },
+    state: { sorting, columnVisibility },
     onSortingChange: setSorting,
+    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
@@ -367,6 +351,21 @@ export function PlayerPoolTable({
 
   return (
     <div className="well overflow-x-auto">
+      <div className="flex items-center justify-between gap-3 border-b border-line px-3 py-2">
+        <span className="label-quiet">{players.length} players</span>
+        <button
+          type="button"
+          onClick={() =>
+            setColumnVisibility((v) => ({
+              ...v,
+              salary_estimate: !showEstimates,
+            }))
+          }
+          className="label-quiet hover:text-ink transition-colors"
+        >
+          {showEstimates ? "Hide estimated salaries" : "Show estimated salaries"}
+        </button>
+      </div>
       <table className="w-full text-sm">
         <thead className="bg-surface-2 border-b border-line">
           {table.getHeaderGroups().map((hg) => (

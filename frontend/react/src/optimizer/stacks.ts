@@ -47,13 +47,6 @@ export interface StackCandidate {
   projection: number;
   /** Projected points per $100 of salary. */
   value: number;
-  /** Average projected ownership across the stack, percent. */
-  ownership: number;
-  /**
-   * False when any player in the stack has no ownership figure. The panel
-   * says "unknown" rather than showing a made-up zero.
-   */
-  ownershipKnown: boolean;
   /** The rule that gets written into the optimizer when this stack is used. */
   rule: StackRule;
 }
@@ -127,14 +120,6 @@ function buildCandidate(params: {
   const salary = salaryOf(players);
   const projection = round(projectionOf(players), 2);
   const value = salary > 0 ? round((projection / salary) * 100, 2) : 0;
-  const ownership = round(
-    players.reduce((sum, p) => sum + (p.projected_ownership ?? 0), 0) / players.length,
-    1,
-  );
-  const ownershipKnown = players.every(
-    (p) =>
-      typeof p.projected_ownership === "number" && !Number.isNaN(p.projected_ownership),
-  );
   const id = `${params.variant}:${params.scopeId}:${players.map((p) => p.id).sort().join("-")}`;
 
   return {
@@ -149,8 +134,6 @@ function buildCandidate(params: {
     salary,
     projection,
     value,
-    ownership,
-    ownershipKnown,
     rule: {
       scope: params.scope,
       id: params.scopeId,

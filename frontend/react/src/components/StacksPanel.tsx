@@ -215,14 +215,6 @@ export function StacksPanel({
                             {fmtDecimal(stack.value, 2)} per $100
                           </dd>
                         </div>
-                        <div className="flex gap-1.5">
-                          <dt className="label-quiet">Roster</dt>
-                          <dd className="num text-ink">
-                            {stack.ownershipKnown
-                              ? `${fmtDecimal(stack.ownership, 1)}%`
-                              : "Unknown"}
-                          </dd>
-                        </div>
                       </dl>
                     </div>
 

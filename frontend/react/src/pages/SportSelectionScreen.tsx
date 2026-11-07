@@ -12,10 +12,10 @@ export function SportSelectionScreen() {
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <div>
             <h2 className="font-condensed text-2xl font-semibold tracking-tight text-ink">
-              Five strategies, one engine
+              Four strategies, one engine
             </h2>
             <p className="label mt-1">
-              Every sport ships with the same five strategy presets.
+              Every sport ships with the same four strategy presets.
             </p>
           </div>
         </div>
@@ -23,7 +23,6 @@ export function SportSelectionScreen() {
           {[
             ["Monte Carlo", "Diversified tournament builds driven by correlated simulations."],
             ["Max Projection", "The best possible lineup by projection. Best for cash games."],
-            ["Contrarian", "Divide score by √ownership for tournament leverage."],
             ["Balanced", "Maximize projection per dollar — efficient salary usage."],
             ["Salary Cap", "Spend aggressively while keeping projections reasonable."],
           ].map(([title, body]) => (

@@ -58,7 +58,6 @@ function toWire(p: EnginePlayer): Player {
     correlation_group: p.correlationGroup,
     opponent_id: p.opponentId,
     bout: p.bout,
-    projected_ownership: p.projectedOwnership,
     is_locked: p.isLocked,
     is_excluded: p.isExcluded,
     is_liked: p.isLiked,
@@ -237,7 +236,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "fantasy-grinder-app",
-      version: 5,
+      version: 6,
       partialize: (s) => ({
         players: s.players,
         nbaSettings: s.nbaSettings,
@@ -248,8 +247,12 @@ export const useAppStore = create<AppState>()(
       // v3 → v4: NFL added; drop persisted rosters again so the live slate
       // is always the source of truth.
       // v4 → v5: the NFL pool starts from the bundled DraftKings slate.
+      // v5 → v6: the salary field now holds only published DraftKings
+      // prices. A roster persisted under v5 may still carry a modelled
+      // price in that field, so persisted rosters are dropped and
+      // regenerated rather than silently reinterpreted.
       migrate: (persisted: unknown, version: number) => {
-        if (version < 5) {
+        if (version < 6) {
           return {
             players: { nba: [], nfl: [], mma: [], golf: [] },
             nbaSettings: {

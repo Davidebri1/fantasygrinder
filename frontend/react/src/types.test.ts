@@ -30,12 +30,8 @@ describe("OBJECTIVES", () => {
 });
 
 describe("SIMULATION_MODES", () => {
-  it("has off / monteCarlo / contrarian", () => {
-    expect(SIMULATION_MODES.map((m) => m.value)).toEqual([
-      "off",
-      "monteCarlo",
-      "contrarian",
-    ]);
+  it("has off / monteCarlo, and nothing that needs ownership data", () => {
+    expect(SIMULATION_MODES.map((m) => m.value)).toEqual(["off", "monteCarlo"]);
   });
 });
 
@@ -48,7 +44,6 @@ describe("strategyFromParts", () => {
 
   it("simulation modes override the objective name in the engine", () => {
     expect(strategyFromParts("maxProjection", "monteCarlo")).toBe("monteCarlo");
-    expect(strategyFromParts("balanced", "contrarian")).toBe("contrarian");
   });
 });
 

@@ -17,7 +17,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, ChevronUp, Copy, Lock, Unlock } from "lucide-react";
 
 import { cn, fmtDecimal, fmtMoney } from "@/lib/utils";
-import { salaryIsReal } from "@/lib/real-salaries";
 import { PlayerChip } from "./PlayerChip";
 import { TeamCrest } from "./TeamCrest";
 import type { Lineup, Player, Sport } from "@/types";
@@ -63,18 +62,14 @@ export function lineupRst(lineup: Lineup, ctx: RotoContext): number {
  * message, so it reads as sentences rather than as a table.
  */
 export function lineupText(lineup: Lineup, ctx: RotoContext): string {
-  // Every salary shows. The label says where the prices came from: a
-  // DraftKings import is real; anything else is the published estimate.
-  const poolPlayers = [...ctx.byId.values()];
-  const hasRealSalaries = poolPlayers.length > 0 && poolPlayers.every(salaryIsReal);
+  // A lineup can only be built from players who carry a real published
+  // DraftKings price — the solver refuses any player whose salary is not a
+  // real positive number. So every salary on a lineup is real, and there is
+  // no estimate to label here.
   const lines: string[] = [
     `Fantasy Grinder — Lineup #${lineup.rank}`,
     `Projected: ${fmtDecimal(lineup.total_projection)} points`,
-    ...(poolPlayers.length > 0
-      ? [hasRealSalaries
-          ? `Salary: ${fmtMoney(lineup.total_salary)}`
-          : `Salary (est.): ${fmtMoney(lineup.total_salary)}`]
-      : []),
+    `Salary: ${fmtMoney(lineup.total_salary)}`,
     `Roto Score: ${fmtDecimal(lineupRst(lineup, ctx))}%`,
     "",
   ];
@@ -85,9 +80,7 @@ export function lineupText(lineup: Lineup, ctx: RotoContext): string {
     const points = p ? fmtDecimal(p.projection) : "—";
     const rst = p ? fmtDecimal(playerRst(p, ctx)) : "—";
     lines.push(
-      hasRealSalaries
-        ? `${a.slot} — ${a.player_name}${opponent} — ${salary} — ${points} points — Roto Score ${rst}%`
-        : `${a.slot} — ${a.player_name}${opponent} — ${salary} (est.) — ${points} points — Roto Score ${rst}%`,
+      `${a.slot} — ${a.player_name}${opponent} — ${salary} — ${points} points — Roto Score ${rst}%`,
     );
   }
   return lines.join("\n");
@@ -197,11 +190,12 @@ export function RotoLineupCard({
     return counts;
   }, [lineup, ctx]);
 
-  // The pool's salaries are real only when they came from a DraftKings
-  // import. The context's byId map IS the pool, so this works wherever the
-  // card renders — no extra prop to thread through.
-  const hasRealSalaries = useMemo(
-    () => ctx.byId.size > 0 && [...ctx.byId.values()].every(salaryIsReal),
+  // The projections on this card may be DraftKings' own or this app's
+  // model; the salary is always a published DraftKings price.
+  const projectionsAreReal = useMemo(
+    () =>
+      ctx.byId.size > 0 &&
+      [...ctx.byId.values()].every((p) => p.projection_source === "dk"),
     [ctx.byId],
   );
 
@@ -226,11 +220,11 @@ export function RotoLineupCard({
           )}
         >
           <HeaderStat
-            label={hasRealSalaries ? "Projected" : "Projected (est.)"}
+            label={projectionsAreReal ? "Projected" : "Projected (est.)"}
             value={fmtDecimal(lineup.total_projection)}
           />
           <HeaderStat
-            label={hasRealSalaries ? "Salary" : "Salary (est.)"}
+            label="Salary"
             value={fmtMoney(lineup.total_salary)}
           />
           <HeaderStat label="Roto Score" value={`${fmtDecimal(rst)}%`} accent />
@@ -244,10 +238,10 @@ export function RotoLineupCard({
             <th className="label text-left font-normal px-2 py-1.5">Team</th>
             <th className="label text-left font-normal px-2 py-1.5">Opp</th>
             <th className="label text-right font-normal px-2 py-1.5">
-              {hasRealSalaries ? "Salary" : "Salary (est.)"}
+              Salary
             </th>
             <th className="label text-right font-normal px-2 py-1.5">
-              {hasRealSalaries ? "Pts" : "Pts (est.)"}
+              {projectionsAreReal ? "Pts" : "Pts (est.)"}
             </th>
             <th className="label text-right font-normal px-3 py-1.5">Roto Score</th>
             <th className="label text-right font-normal px-3 py-1.5">Exposure</th>
@@ -359,11 +353,9 @@ export function RotoLineupCard({
                     <span className="text-ink-subtle">—</span>
                   )}
                 </td>
-                {hasRealSalaries && (
-                  <td className="num px-2 py-1.5 text-right text-ink-muted">
-                    {p ? fmtMoney(p.salary) : "—"}
-                  </td>
-                )}
+                <td className="num px-2 py-1.5 text-right text-ink-muted">
+                  {p ? fmtMoney(p.salary) : "—"}
+                </td>
                 <td className="num px-2 py-1.5 text-right">
                   {p ? fmtDecimal(p.projection) : "—"}
                 </td>

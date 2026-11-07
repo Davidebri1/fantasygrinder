@@ -15,13 +15,12 @@ function findChromium() {
 }
 (async () => {
   const b = await chromium.launch({ executablePath: findChromium() });
-  const p = await b.newPage({ viewport: { width: 960, height: 1150 } });
-  await p.goto("file:///C:/Users/D/mavis-fantasy-grinder/docs/brand/mavis-logo-final.html");
+  const p = await b.newPage({ viewport: { width: 720, height: 380 }, deviceScaleFactor: 2 });
+  await p.goto("file:///C:/Users/D/mavis-fantasy-grinder/docs/brand/mavis-outlier-logo-final.html");
   await p.waitForTimeout(700);
   await p.screenshot({ path: "C:/Users/D/mavis-fantasy-grinder/docs/brand/mavis-outlier-logo-final.png", fullPage: true });
-  // favicon-size png
   const p2 = await b.newPage({ viewport: { width: 256, height: 256 } });
-  await p2.goto("file:///C:/Users/D/mavis-fantasy-grinder/docs/brand/mavis-outlier-logo-tile.svg");
+  await p2.goto("file:///C:/Users/D/mavis-fantasy-grinder/frontend/react/public/favicon.svg");
   await p2.waitForTimeout(500);
   await p2.screenshot({ path: "C:/Users/D/mavis-fantasy-grinder/docs/brand/mavis-outlier-logo-favicon.png" });
   await b.close();

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="lg-h4" cx="50%" cy="8%" r="86%">
+      <stop offset="0%" stop-color="rgba(190,215,255,0.18)"/>
+      <stop offset="55%" stop-color="rgba(20,40,60,0.18)"/>
+      <stop offset="100%" stop-color="rgba(3,10,18,0.82)"/>
+    </radialGradient>
+    <filter id="bk-h4" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="34"/></filter>
+    <filter id="gl-h4" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="22"/></filter>
+  </defs>
+  <rect x="0" y="0" width="512" height="512" fill="#123322"/>
+  <rect x="0" y="0" width="512" height="86" fill="#123322"/><rect x="0" y="86" width="512" height="86" fill="#173d2b"/><rect x="0" y="172" width="512" height="86" fill="#123322"/><rect x="0" y="258" width="512" height="86" fill="#173d2b"/><rect x="0" y="344" width="512" height="86" fill="#123322"/><rect x="0" y="430" width="512" height="86" fill="#173d2b"/>
+  <rect x="0" y="0" width="512" height="512" fill="url(#lg-h4)"/>
+  <g filter="url(#bk-h4)" opacity="0.55">
+    <circle cx="92" cy="66" r="52" fill="rgba(214,228,255,0.6)"/>
+    <circle cx="416" cy="104" r="34" fill="rgba(214,228,255,0.42)"/>
+    <circle cx="300" cy="38" r="22" fill="rgba(214,228,255,0.32)"/>
+  </g>
+  <line x1="46" y1="428" x2="466" y2="428" stroke="#eef3ff" stroke-width="3" opacity="0.3" stroke-linecap="round"/>
+  <rect x="64.0" y="399.2" width="19.2" height="28.8" fill="#eef3ff" opacity="0.88"/><rect x="89.0" y="378.1" width="19.2" height="49.9" fill="#eef3ff" opacity="0.88"/><rect x="113.9" y="345.4" width="19.2" height="82.6" fill="#eef3ff" opacity="0.88"/><rect x="138.9" y="310.9" width="19.2" height="117.1" fill="#eef3ff" opacity="0.88"/><rect x="163.8" y="276.3" width="19.2" height="151.7" fill="#eef3ff" opacity="0.88"/><rect x="188.8" y="251.4" width="19.2" height="176.6" fill="#eef3ff" opacity="0.88"/><rect x="213.8" y="236.0" width="19.2" height="192.0" fill="#eef3ff" opacity="0.88"/><rect x="238.7" y="251.4" width="19.2" height="176.6" fill="#eef3ff" opacity="0.88"/><rect x="263.7" y="282.1" width="19.2" height="145.9" fill="#eef3ff" opacity="0.88"/><rect x="288.6" y="322.4" width="19.2" height="105.6" fill="#eef3ff" opacity="0.88"/><rect x="313.6" y="358.9" width="19.2" height="69.1" fill="#eef3ff" opacity="0.88"/>
+  <rect x="394" y="150" width="30" height="278" fill="#ff4d55" opacity="0.55" filter="url(#gl-h4)"/>
+  <rect x="394" y="150" width="30" height="278" fill="#e5484d"/>
+</svg>
