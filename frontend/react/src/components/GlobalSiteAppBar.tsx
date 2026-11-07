@@ -176,7 +176,7 @@ export function GlobalSiteAppBar({ pageTitle }: { pageTitle: string }) {
               FG
             </span>
             <span className="font-condensed text-lg font-semibold tracking-tight text-ink-on-dark">
-              Fantasy Grinder
+              Outlier
             </span>
           </NavLink>
 

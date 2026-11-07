@@ -67,7 +67,7 @@ export function lineupText(lineup: Lineup, ctx: RotoContext): string {
   // real positive number. So every salary on a lineup is real, and there is
   // no estimate to label here.
   const lines: string[] = [
-    `Fantasy Grinder — Lineup #${lineup.rank}`,
+    `Outlier — Lineup #${lineup.rank}`,
     `Projected: ${fmtDecimal(lineup.total_projection)} points`,
     `Salary: ${fmtMoney(lineup.total_salary)}`,
     `Roto Score: ${fmtDecimal(lineupRst(lineup, ctx))}%`,

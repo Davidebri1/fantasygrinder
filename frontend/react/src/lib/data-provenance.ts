@@ -1,7 +1,7 @@
 /**
  * Data provenance — the one place that says what is real and what is modelled.
  *
- * Fantasy Grinder pulls live player data from ESPN's public API. Everything
+ * Outlier pulls live player data from ESPN's public API. Everything
  * ESPN publishes is real: names, teams, positions, injuries, season averages,
  * live games, headshots.
  *

@@ -1,5 +1,5 @@
 /**
- * Shared TypeScript types for the Fantasy Grinder web app.
+ * Shared TypeScript types for the Outlier web app.
  *
  * These mirror the wire shapes in `docs/openapi.yaml`. We deliberately
  * keep them in lockstep with the Django serializers; if a serializer

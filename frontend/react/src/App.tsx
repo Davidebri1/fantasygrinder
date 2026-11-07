@@ -17,7 +17,7 @@ const titles: Record<string, string> = {
 
 export default function App() {
   const location = useLocation();
-  const pageTitle = titles[location.pathname] ?? "Fantasy Grinder";
+  const pageTitle = titles[location.pathname] ?? "Outlier";
   return (
     <>
       <AuroraBackdrop />
